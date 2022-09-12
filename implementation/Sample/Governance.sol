@@ -1,51 +1,64 @@
 pragma solidity ^0.8.16;
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "solmate/tokens/ERC1155.sol";
 import "../ERC/IGovernance.sol";
 import "../ERC/Proposal.sol";
 
-contract Governance is ERC165, ERC1155, IGovernance {
+contract Governance is ERC1155, IGovernance {
+
+    //// ERC1155 ////
+    string private _uri;
+    uint256 public lastId = 0;
 
     //// Governance Settings ////
-    GovernanceSettings settings;
+    GovernanceSettings public settings;
 
     //// Mappings ////
 
     mapping(uint256 => uint256) structure;
-    mapping(uint256 => mapping(address => uint256)) availableVp; // id => member => VP
-    mapping(uint256 => mapping(address => uint256)) availableBalance; // id => member => VP
-    mapping(uint256 => mapping(address => mapping(address => uint256))) delegated; // id => staker => delegatee => VP
+    mapping(address => mapping(uint256 => uint256)) availableVp; // member => id =>  VP
+    mapping(address => mapping(address => mapping(uint256 => uint256))) delegated; // staker => delegatee => id => VP
     mapping(uint256 => uint256) totalVp; // id => totalVp
 
     //// Functions ////
 
     //// Constructor ////
 
-    constructor(string memory uri_) ERC1155(uri_) {}
+    constructor(string memory uri_, GovernanceSettings memory settings_) {
+        _uri = uri_;
+        settings = settings_;
+        ERC1155._mint(
+            msg.sender,
+            0,
+            1000,
+            new bytes(0)
+        );
+    }
 
     //// ERC165 ////
 
     // TODO check override
-    function supportsInterface(bytes4 interfaceId) public view override(ERC165, ERC1155) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         return interfaceId == type(IGovernance).interfaceId || super.supportsInterface(interfaceId);
     }
 
     //// ERC1155 ////
 
-    function subGovernance(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public {
-        require(votingPower(tx.origin) >= settings.proposalCreationThreshold);
+    function uri(uint256 id) public view override returns (string memory) {
+        return _uri;
     }
 
-    //// ERC1155 Overrides ////
-
-    function balanceOf(address account, uint256 id) public view override returns (uint256) {
-        require(account != address(0), "ERC1155: address zero is not a valid owner");
-        return availableBalance[id][account];
+    // TODO
+    function subGovernance(
+        address[] memory to,
+        uint256 parentId,
+        uint256 amount,
+        bytes calldata data
+    ) public {
+        uint256 balance = ERC1155.balanceOf[msg.sender][parentId];
+        require(balance >= settings.proposalCreationThreshold, "qwert");
+        lastId += 1;
+        structure[parentId] = lastId;
+        for (uint256 i = 0; i < to.length; i += 1) ERC1155._mint(to[i], lastId, amount, data);
     }
 
     //// IGovernance - getters ////
@@ -55,7 +68,7 @@ contract Governance is ERC165, ERC1155, IGovernance {
     }
 
     function votingPower(address member, uint256 id) public view returns (uint256) {
-        return availableVp[id][member];
+        return availableVp[member][id];
     }
 
     function totalVotingPower(uint256 id) external view returns (uint256) {
@@ -83,23 +96,23 @@ contract Governance is ERC165, ERC1155, IGovernance {
 
     //// Managing Voting Power ////
 
-    function stakeFor(address staker, address delegatee, uint256 amount, uint256 id) external {
+    function stakeFor(address staker, address delegatee, uint256 amount, uint256 id, bytes calldata data) external {
 
-        require(availableBalance[id][staker] >= amount);
+        require(ERC1155.balanceOf[staker][id] >= amount);
 
-        availableVp[id][delegatee] += amount;
-        availableBalance[id][staker] -= amount;
-        delegated[id][staker][delegatee] += amount;
+        availableVp[delegatee][id] += amount;
+        delegated[staker][delegatee][id] += amount;
+        ERC1155.safeTransferFrom(staker, address(this), id, amount, data);
     }
 
     // TODO count Proposals in which delegatee participated
-    function unstakeFor(address staker, address delegatee, uint256 amount, uint256 id) external {
+    function unstakeFor(address staker, address delegatee, uint256 amount, uint256 id, bytes calldata data) external {
 
-        require(delegated[id][staker][delegatee] >= amount);
+        require(delegated[staker][delegatee][id] >= amount);
 
-        availableVp[id][delegatee] -= amount;
-        availableBalance[id][staker] += amount;
-        delegated[id][staker][delegatee] -= amount;
+        availableVp[delegatee][id] -= amount;
+        delegated[staker][delegatee][id] -= amount;
+        ERC1155.safeTransferFrom(address(this), staker, id, amount, data);
     }
 
     //// Proposals management ////
@@ -130,6 +143,7 @@ contract Governance is ERC165, ERC1155, IGovernance {
     //// Hooks ////
     // Must be run by IProposalRegistry
 
+    // TODO
     function proposalCompleted(uint256 proposalId) external {
         require(true);
     }

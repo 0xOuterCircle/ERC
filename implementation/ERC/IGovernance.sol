@@ -26,8 +26,8 @@ interface IGovernance {
     function updateSettings(GovernanceSettings memory) external;
 
     //// Managing Voting Power ////
-    function stakeFor(address staker, address delegatee, uint256 amount, uint256 id) external;
-    function unstakeFor(address staker, address delegatee, uint256 amount, uint256 id) external;
+    function stakeFor(address staker, address delegatee, uint256 amount, uint256 id, bytes calldata data) external;
+    function unstakeFor(address staker, address delegatee, uint256 amount, uint256 id, bytes calldata data) external;
 
     //// Proposals management ////
 
