@@ -9,3 +9,7 @@ out/
 
 # Dotenv file
 .env
+
+# foundry stuff
+.gas-snapshot
+lib

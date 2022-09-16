@@ -1,7 +1,8 @@
 [profile.default]
-solc = "0.8.16"
+solc = "0.8.17"
 src = 'implementation'
 out = 'out'
 libs = ['lib']
+gas_reports = ["*"]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

@@ -1,9 +1,9 @@
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "../implementation/Sample/Governance.sol";
-import {GovernanceSettings} from "../implementation/ERC/IGovernance.sol";
-import "../implementation/ERC/IProposalRegistry.sol";
+import "../src/Sample/Governance.sol";
+import {GovernanceSettings} from "../src/ERC/IGovernance.sol";
+import "../src/ERC/IProposalRegistry.sol";
 
 contract GovernanceTest is Test {
     Governance governance;
