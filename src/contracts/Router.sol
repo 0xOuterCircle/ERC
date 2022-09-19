@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.0;
 
-import "./ProposalRegistry.sol";
-
-contract Router is ProposalRegistry {
+contract Router {
     constructor() {}
 
 }

@@ -1,19 +1,15 @@
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.8.17;
-import "./Proposal.sol";
-import "./IGovernance.sol";
+
+struct Transaction {
+    address to;
+    uint value;
+    bytes data;
+}
 
 interface IProposalRegistry {
-
-    //// Getters ////
-
-    function totalProposalsFor(IGovernance governance) external returns (uint256);
-    function getProposal(IGovernance governance, uint256 proposalId) external view returns (Proposal memory proposal);
-
-    //// Setters ////
-    // Must be run by IGovernance
-
-    function registerProposal(Proposal memory proposal) external returns (uint256 id);
-    function executeProposal(uint256 proposalId) external returns (bool success);
-    function vote(uint256 proposalId, uint256 vp) external;
-    function revokeVote(uint256 proposalId, uint256 optionId) external;
+    function vote(uint256 propId, bool decision, bytes calldata data) external;
+    function createProposal(uint256 propId, Transaction[] calldata pipeline) external;
+    function execute(uint256 propId) external;
 }
