@@ -15,7 +15,7 @@ enum Status {
     EXISTS,
     ACCEPTED,
     EXECUTED,
-    DENIED
+    REJECTED
 }
 
 struct Proposal {
@@ -36,6 +36,9 @@ enum VoteType {
 contract ProposalRegistry {
 
     event ProposalCreated(uint256 indexed _propId);
+    event ProposalAccepted(uint256 indexed _propId);
+    event ProposalRejected(uint256 indexed _propId);
+    event ProposalExecuted(uint256 indexed _propId);
 
     mapping(uint256 => Proposal) public proposals;
     mapping(address => mapping(uint256 => VoteType)) public voted;
@@ -89,9 +92,22 @@ contract ProposalRegistry {
         _processVoteData(_propId, _decision, _data);
 
         voted[msg.sender][_propId] = _decision ? VoteType.YES : VoteType.NO;
+
+        VoteType result = voteResult(_propId);
+        if (result == VoteType.YES) {
+            proposal.status = Status.ACCEPTED;
+            emit ProposalAccepted(_propId);
+
+        } else if (result == VoteType.NO) {
+            proposal.status = Status.REJECTED;
+            emit ProposalRejected(_propId);
+        }
+
     }
 
     function _processVoteData(uint256 _propId, bool _decision, bytes calldata _data) internal virtual {}
+
+    function voteResult(uint256 _propId) public virtual returns(VoteType) {}
 
     function execute(uint256 _propId) external {
         require(!proposalExpired(_propId), 'Proposal expired');
@@ -107,6 +123,8 @@ contract ProposalRegistry {
             // TODO: сделать что-то с data_
             require(success_, 'Transaction failed');
         }
+
+        emit ProposalExecuted(_propId);
     }
 
     function proposalExpired(uint256 _propId) public view returns(bool) {
