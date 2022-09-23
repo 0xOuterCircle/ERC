@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IVotingToken.sol";
+import "../interfaces/IGovernance.sol";
 
 struct Transaction {
     address to;
     uint value;
     bytes data;
+    bytes response;
 }
 
 enum Status {
@@ -42,12 +43,12 @@ contract ProposalRegistry {
 
     mapping(uint256 => Proposal) public proposals;
     mapping(address => mapping(uint256 => VoteType)) public voted;
-    IVotingToken public votingToken;
+    IGovernance public governance;
     uint256 public proposalExpirationTime;
 
 
-    constructor(IVotingToken _token, uint256 _proposalExpirationTime) {
-        votingToken = _token;
+    constructor(IGovernance _governance, uint256 _proposalExpirationTime) {
+        governance = _governance;
         proposalExpirationTime = _proposalExpirationTime;
         
     }
@@ -71,7 +72,7 @@ contract ProposalRegistry {
 
         Proposal storage proposal = proposals[_propId];
 
-        uint256 votingPower_ = votingToken.balanceOfAt(msg.sender, proposal.creationBlock - 1);
+        uint256 votingPower_ = governance.votingPowerAt(msg.sender, proposal.creationBlock);
 
         require(votingPower_ > 0, "You have no voting power for this proposal");
 
@@ -118,9 +119,10 @@ contract ProposalRegistry {
         proposal.status = Status.EXECUTED;
 
         for(uint256 i=0; i < proposal.pipeline.length; ++i) {
-            Transaction memory trans = proposal.pipeline[i];
-            (bool success_, bytes memory data_) = trans.to.call{value: trans.value}(trans.data);
-            // TODO: сделать что-то с data_
+            Transaction storage trans = proposal.pipeline[i];
+            (bool success_, bytes memory response_) = trans.to.call{value: trans.value}(trans.data);
+            trans.response = response_;
+
             require(success_, 'Transaction failed');
         }
 
