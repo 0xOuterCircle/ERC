@@ -22,7 +22,7 @@ interface IRouter {
         string memory name,
         string memory description,
         string memory dynamicParamsTypes, // ["uint256", "string", ...]
-        string memory dynamicParamsLabels, // ["uint256", "string", ...]
+        string memory dynamicParamsLabels, // ["Label 1", "Label 2", ...] is used for interfaces
         Transaction initialTransaction
     );
 }
