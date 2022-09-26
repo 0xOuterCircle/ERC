@@ -122,7 +122,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         for(uint256 i = 0; i < proposal.pipeline.length; ++i) {
             Transaction storage trans = proposal.pipeline[i];
             if (trans.transType == TransactionType.ROUTER) {
-                trans.data = IRouter(trans.to).onVote(i, _decision, _data);
+                trans.data = IRouter(trans.to).onVote(_propId, i, _decision, _data);
             }
         }
 
