@@ -3,8 +3,10 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IGovernance.sol";
+import "../interfaces/IRouter.sol";
 import {IProposalRegistry} from "../interfaces/IProposalRegistry.sol";
 import "openzeppelin/utils/introspection/ERC165.sol";
+import "openzeppelin/utils/introspection/IERC165.sol";
 
 
 struct Transaction {
@@ -12,6 +14,12 @@ struct Transaction {
     uint value;
     bytes data;
     bytes response;
+    TransactionType transType;
+}
+
+enum TransactionType {
+    REGULAR,
+    ROUTER
 }
 
 enum Status {
@@ -65,6 +73,15 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external {
         require(proposals[_propId].status == Status.NONE, 'Proposal with this ID already exists');
+
+        // check for IRouter interface supporting
+        for(uint256 i = 0; i < _pipeline.length; ++i) {
+            Transaction calldata trans = _pipeline[i];
+            if (trans.transType == TransactionType.ROUTER) {
+                require(IERC165(trans.to).supportsInterface(type(IRouter).interfaceId), 
+                "Router doesn't correspond IRouter interface");
+            }
+        }
         
         _beforeCreateProposal(_propId, _pipeline);
 
@@ -101,7 +118,13 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
             proposal.noCount += votingPower_;
         }
 
-        _processVoteData(_propId, _decision, _data);
+        // updating router-transactions states
+        for(uint256 i = 0; i < proposal.pipeline.length; ++i) {
+            Transaction storage trans = proposal.pipeline[i];
+            if (trans.transType == TransactionType.ROUTER) {
+                trans.data = IRouter(trans.to).onVote(i, _decision, _data);
+            }
+        }
 
         voted[msg.sender][_propId] = _decision ? VoteType.YES : VoteType.NO;
 
@@ -116,8 +139,6 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         }
 
     }
-
-    function _processVoteData(uint256 _propId, bool _decision, bytes calldata _data) internal virtual {}
 
     function voteResult(uint256 _propId) public virtual view returns(VoteType) {}
 
