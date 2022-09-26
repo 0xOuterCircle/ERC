@@ -10,8 +10,8 @@ interface IProposalRegistry is IERC165 {
     function vote(uint256 propId, bool decision, bytes calldata data) external;
     function createProposal(Proposal memory proposal) external returns (uint256 propId);
     function execute(uint256 propId) external;
-    function voteResult(uint256 propId) external;
-    function proposalExpired(uint256 propId) external;
+    function voteResult(uint256 propId) external view returns(VoteType);
+    function proposalExpired(uint256 propId) external view returns(bool);
     
     function getProposal(uint256 propId) external view returns (Proposal memory proposal);
     function governance() external view returns(IGovernance);

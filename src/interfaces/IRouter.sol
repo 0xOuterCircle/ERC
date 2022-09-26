@@ -2,23 +2,21 @@
 
 pragma solidity 0.8.17;
 
-import {Transaction} from "../contracts/ProposalRegistry.sol";
+import {Transaction, VoteType} from "../contracts/ProposalRegistry.sol";
 
 interface IRouter {
     function vote(
-        bool decision,  // Vote decision
-        uint256 routerTransactionId,  // id of Transaction related to current IRouter in pipeline
+        VoteType decision,  // Vote decision: 0 -- neutral, 1 -- yes, 2 -- no
+        uint256 transactionId,  // id of Transaction related to current IRouter in pipeline
         bytes calldata data,  // Call parameters before the vote
         bytes calldata voteData  // Voted parameters
     ) external returns(bytes memory updatedData);  // returns the updated Transaction related to IRouter
 
-    function execute(
-        uint256 routerTransactionId,
-        bytes calldata data
-    ) external;
+    function execute(uint256 transactionId, bytes calldata data) external;
 
-    function totalTransactions() external view returns (uint256 transactionsAmount);
-    function getTransaction() external view returns (
+    function totalTransactions() external view returns (uint256); // total number of transactions
+
+    function getTransaction(uint256 transactionId) external view returns (
         string memory name,
         string memory description,
         string memory dynamicParamsTypes, // ["uint256", "string", ...]
