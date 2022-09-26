@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import "./Proposal.sol";
+import {Transaction} from "../contracts/ProposalRegistry.sol";
 
 interface IRouter {
     function vote(
@@ -23,6 +23,6 @@ interface IRouter {
         string memory description,
         string memory dynamicParamsTypes, // ["uint256", "string", ...]
         string memory dynamicParamsLabels, // ["Label 1", "Label 2", ...] is used for interfaces
-        Transaction initialTransaction
+        Transaction memory initialTransaction
     );
 }

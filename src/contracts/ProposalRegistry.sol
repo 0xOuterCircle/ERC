@@ -3,6 +3,9 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IGovernance.sol";
+import {IProposalRegistry} from "../interfaces/IProposalRegistry.sol";
+import "openzeppelin/utils/introspection/ERC165.sol";
+
 
 struct Transaction {
     address to;
@@ -34,15 +37,16 @@ enum VoteType {
     NO
 }
 
-contract ProposalRegistry {
+abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     event ProposalCreated(uint256 indexed _propId);
     event ProposalAccepted(uint256 indexed _propId);
     event ProposalRejected(uint256 indexed _propId);
-    event ProposalExecuted(uint256 indexed _propId);
+    event ProposalExecuted(uint256 indexed _propId);   
+
+    mapping(address => mapping(uint256 => VoteType)) private voted;
 
     mapping(uint256 => Proposal) public proposals;
-    mapping(address => mapping(uint256 => VoteType)) public voted;
     IGovernance public governance;
     uint256 public proposalExpirationTime;
 
@@ -52,6 +56,13 @@ contract ProposalRegistry {
         proposalExpirationTime = _proposalExpirationTime;
         
     }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+        return
+            interfaceId == type(IProposalRegistry).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external {
         require(proposals[_propId].status == Status.NONE, 'Proposal with this ID already exists');
         
@@ -108,7 +119,7 @@ contract ProposalRegistry {
 
     function _processVoteData(uint256 _propId, bool _decision, bytes calldata _data) internal virtual {}
 
-    function voteResult(uint256 _propId) public virtual returns(VoteType) {}
+    function voteResult(uint256 _propId) public virtual view returns(VoteType) {}
 
     function execute(uint256 _propId) external {
         require(!proposalExpired(_propId), 'Proposal expired');
