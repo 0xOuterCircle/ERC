@@ -2,5 +2,13 @@
 
 pragma solidity 0.8.17;
 
+import "./Transaction.sol";
+
 interface IRouter {
+    function vote(
+        bool decision,  // Vote decision
+        uint256 routerTransactionId,  // id of Transaction related to current IRouter in pipeline
+        bytes calldata data,
+        bytes calldata voteData  // Voted parameters
+    ) external returns(Transaction memory);  // returns the updated Transaction related to IRouter
 }
