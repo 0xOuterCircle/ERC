@@ -1,8 +1,13 @@
 ### Proposal creation
 ```
-Transaction[] pipeline
+▽ for every of N IRouter in pipeline
+[
+    IRouterN.getTransaction ▷ Transaction
+]
 ▽
-IProposalRegistry.createProposal
+Transaction[] pipeline ▷ Proposal
+▽
+IProposalRegistry.createProposal(Proposal)
 ```
 
 ### Proposal voting
