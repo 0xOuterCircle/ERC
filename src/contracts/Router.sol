@@ -8,6 +8,8 @@ import {Proposal, Transaction} from "./ProposalRegistry.sol";
 import "openzeppelin/utils/introspection/ERC165.sol";
 
 abstract contract Router is ERC165, IRouter {
+    mapping(bytes4 => string[]) public userVars; // UI Report to frontent purposes
+
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
         return interfaceId == type(IRouter).interfaceId || super.supportsInterface(interfaceId);
     }
@@ -36,14 +38,7 @@ abstract contract Router is ERC165, IRouter {
         return text;
     }
 
-    // =================== UI Report to frontent purposes ===================
-
-    /**
-     * @dev Report format: <funcName>::[comma-separated user argument names]\n
-     * @dev Example: myFunc::[arg1,arg2]\n
-     */
-    function getUiReport() external pure returns (string memory report) {
-        report = string.concat(report, "textProposal", "::", "[]", "\n");
-        // report = string.concat(report, "anotherFunc", "::", "[arg1, arg2]", "\n");
+    function _setUserVars(bytes4 funcSelector, string[] calldata vars) internal {
+        userVars[funcSelector] = vars;
     }
 }

@@ -8,10 +8,9 @@ import {IProposalRegistry} from "../interfaces/IProposalRegistry.sol";
 import "openzeppelin/utils/introspection/ERC165.sol";
 import "openzeppelin/utils/introspection/IERC165.sol";
 
-
 struct Transaction {
     address to;
-    uint value;
+    uint256 value;
     bytes data;
     bytes response;
     TransactionType transType;
@@ -46,11 +45,10 @@ enum VoteType {
 }
 
 abstract contract ProposalRegistry is ERC165, IProposalRegistry {
-
     event ProposalCreated(uint256 indexed _propId);
     event ProposalAccepted(uint256 indexed _propId);
     event ProposalRejected(uint256 indexed _propId);
-    event ProposalExecuted(uint256 indexed _propId);   
+    event ProposalExecuted(uint256 indexed _propId);
 
     mapping(address => mapping(uint256 => VoteType)) private voted;
 
@@ -58,31 +56,29 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
     IGovernance public governance;
     uint256 public proposalExpirationTime;
 
-
     constructor(IGovernance _governance, uint256 _proposalExpirationTime) {
         governance = _governance;
         proposalExpirationTime = _proposalExpirationTime;
-        
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
-        return
-            interfaceId == type(IProposalRegistry).interfaceId ||
-            super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
+        return interfaceId == type(IProposalRegistry).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external {
-        require(proposals[_propId].status == Status.NONE, 'Proposal with this ID already exists');
+        require(proposals[_propId].status == Status.NONE, "Proposal with this ID already exists");
 
         // check for IRouter interface supporting
-        for(uint256 i = 0; i < _pipeline.length; ++i) {
+        for (uint256 i = 0; i < _pipeline.length; ++i) {
             Transaction calldata trans = _pipeline[i];
             if (trans.transType == TransactionType.ROUTER) {
-                require(IERC165(trans.to).supportsInterface(type(IRouter).interfaceId), 
-                "Router doesn't correspond IRouter interface");
+                require(
+                    IERC165(trans.to).supportsInterface(type(IRouter).interfaceId),
+                    "Router doesn't correspond IRouter interface"
+                );
             }
         }
-        
+
         _beforeCreateProposal(_propId, _pipeline);
 
         proposals[_propId] = Proposal(Status.EXISTS, _pipeline, block.number, block.timestamp, 0, 0);
@@ -93,14 +89,13 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
     function _beforeCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
     function _afterCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
 
-
     function vote(uint256 _propId, bool _decision, bytes calldata _data) external {
-        require(!proposalExpired(_propId), 'Proposal expired');
-        require(proposals[_propId].status == Status.EXISTS, 'Proposal must exist');
+        require(!proposalExpired(_propId), "Proposal expired");
+        require(proposals[_propId].status == Status.EXISTS, "Proposal must exist");
 
         Proposal storage proposal = proposals[_propId];
 
-        uint256 votingPower_ = governance.votingPowerAt(msg.sender, proposal.creationBlock);
+        uint256 votingPower_ = governance.votingPowerOf(msg.sender);
 
         require(votingPower_ > 0, "You have no voting power for this proposal");
 
@@ -119,7 +114,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         }
 
         // updating router-transactions states
-        for(uint256 i = 0; i < proposal.pipeline.length; ++i) {
+        for (uint256 i = 0; i < proposal.pipeline.length; ++i) {
             Transaction storage trans = proposal.pipeline[i];
             if (trans.transType == TransactionType.ROUTER) {
                 trans.data = IRouter(trans.to).onVote(_propId, i, _decision, _data);
@@ -132,37 +127,34 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         if (result == VoteType.YES) {
             proposal.status = Status.ACCEPTED;
             emit ProposalAccepted(_propId);
-
         } else if (result == VoteType.NO) {
             proposal.status = Status.REJECTED;
             emit ProposalRejected(_propId);
         }
-
     }
 
-    function voteResult(uint256 _propId) public virtual view returns(VoteType) {}
+    function voteResult(uint256 _propId) public view virtual returns (VoteType) {}
 
     function execute(uint256 _propId) external {
-        require(!proposalExpired(_propId), 'Proposal expired');
-        require(proposals[_propId].status == Status.ACCEPTED, 'Proposal must be accepted');
+        require(!proposalExpired(_propId), "Proposal expired");
+        require(proposals[_propId].status == Status.ACCEPTED, "Proposal must be accepted");
 
         Proposal storage proposal = proposals[_propId];
 
         proposal.status = Status.EXECUTED;
 
-        for(uint256 i=0; i < proposal.pipeline.length; ++i) {
+        for (uint256 i = 0; i < proposal.pipeline.length; ++i) {
             Transaction storage trans = proposal.pipeline[i];
             (bool success_, bytes memory response_) = trans.to.call{value: trans.value}(trans.data);
             trans.response = response_;
 
-            require(success_, 'Transaction failed');
+            require(success_, "Transaction failed");
         }
 
         emit ProposalExecuted(_propId);
     }
 
-    function proposalExpired(uint256 _propId) public view returns(bool) {
+    function proposalExpired(uint256 _propId) public view returns (bool) {
         return proposals[_propId].creationTime + proposalExpirationTime > block.timestamp;
     }
-
 }
