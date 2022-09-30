@@ -52,7 +52,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     mapping(address => mapping(uint256 => VoteType)) private voted;
 
-    mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => Proposal) private proposals;
     IGovernance public governance;
     uint256 public proposalExpirationTime;
 
@@ -156,5 +156,9 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function proposalExpired(uint256 _propId) public view returns (bool) {
         return proposals[_propId].creationTime + proposalExpirationTime > block.timestamp;
+    }
+
+    function getProposal(uint256 _propId) public view returns (Proposal memory) {
+        return proposals[_propId];
     }
 }

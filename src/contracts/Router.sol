@@ -4,11 +4,16 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IRouter.sol";
 import "../interfaces/IProposalRegistry.sol";
-import {Proposal, Transaction} from "./ProposalRegistry.sol";
+import {Proposal, Transaction, Status} from "./ProposalRegistry.sol";
 import "openzeppelin/utils/introspection/ERC165.sol";
 
 abstract contract Router is ERC165, IRouter {
     mapping(bytes4 => string[]) public userVars; // UI Report to frontent purposes
+    IProposalRegistry public registry;
+
+    constructor(IProposalRegistry _registry) {
+        registry = _registry;
+    }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
         return interfaceId == type(IRouter).interfaceId || super.supportsInterface(interfaceId);
@@ -19,12 +24,23 @@ abstract contract Router is ERC165, IRouter {
         virtual
         returns (bytes memory)
     {
+        require(msg.sender == address(registry), "Only registry can call it");
+
         Proposal memory prop = IProposalRegistry(msg.sender).getProposal(_propId);
         Transaction memory trans = prop.pipeline[_transId];
+
+        if (prop.yesCount + prop.noCount == 0) {
+            _onVoteStart(prop, trans, _vote, _voteData);
+        }
 
         bytes memory transData = _processVote(prop, trans, _vote, _voteData);
         return transData;
     }
+
+    function _onVoteStart(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
+        internal
+        virtual
+        returns (bytes memory);
 
     function _processVote(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
         internal
@@ -34,7 +50,9 @@ abstract contract Router is ERC165, IRouter {
     /**
      * @param text Any text to vote for: link, message, id, etc.
      */
-    function textProposal(string calldata text) external pure returns (string calldata) {
+    function textProposal(string calldata text) external view returns (string calldata) {
+        require(msg.sender == address(registry), "Only registry can call it");
+
         return text;
     }
 
