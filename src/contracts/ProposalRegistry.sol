@@ -57,8 +57,8 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
     uint256 public proposalExpirationTime;
 
     constructor(IGovernance _governance, uint256 _proposalExpirationTime) {
-        governance = _governance;
         proposalExpirationTime = _proposalExpirationTime;
+        governance = _governance;
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
@@ -67,6 +67,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external {
         require(proposals[_propId].status == Status.NONE, "Proposal with this ID already exists");
+        require(governance.isMember(msg.sender), "Proposal creator must be a member of the governance");
 
         // check for IRouter interface supporting
         for (uint256 i = 0; i < _pipeline.length; ++i) {
@@ -91,9 +92,11 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(proposals[_propId].status == Status.EXISTS, "Proposal must exist");
 
         Proposal storage proposal = proposals[_propId];
+
+        require(proposal.status == Status.EXISTS, "Proposal must exist");
+        require(governance.isMember(msg.sender), "Only members of the governance can vote");
 
         uint256 votingPower_ = governance.votingPowerOf(msg.sender);
 
@@ -139,9 +142,11 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function execute(uint256 _propId) external {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(proposals[_propId].status == Status.ACCEPTED, "Proposal must be accepted");
 
         Proposal storage proposal = proposals[_propId];
+
+        require(proposal.status == Status.ACCEPTED, "Proposal must be accepted");
+        require(governance.isMember(msg.sender), "Only members of the governance can execute");
 
         proposal.status = Status.EXECUTED;
 
