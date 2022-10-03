@@ -89,7 +89,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
     function _beforeCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
     function _afterCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
 
-    function vote(uint256 _propId, bool _decision, bytes calldata _data) external {
+    function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external {
         require(!proposalExpired(_propId), "Proposal expired");
         require(proposals[_propId].status == Status.EXISTS, "Proposal must exist");
 
@@ -114,10 +114,12 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         }
 
         // updating router-transactions states
+        uint256 routerIndex_;
         for (uint256 i = 0; i < proposal.pipeline.length; ++i) {
             Transaction storage trans = proposal.pipeline[i];
             if (trans.transType == TransactionType.ROUTER) {
-                trans.data = IRouter(trans.to).onVote(_propId, i, _decision, _data);
+                trans.data = IRouter(trans.to).onVote(_propId, i, _decision, _data[routerIndex_]);
+                routerIndex_ += 1;
             }
         }
 
