@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.0;
 
 import "openzeppelin/utils/introspection/IERC165.sol";
+import "./IProposalRegistry.sol";
 
 interface IRouter is IERC165 {
-    function onVote(
-        uint256 propId,
-        uint256 transId,  // id of Transaction related to current IRouter in pipeline
-        bool vote,  // Vote decision: 0 -- neutral, 1 -- yes, 2 -- no
-        bytes calldata voteData  // arbitrary vote data 
-    ) external returns(bytes memory); 
+    function onVote(uint256 _propId, uint256 _transId, bool _vote, bytes calldata _voteData)
+        external
+        returns (bytes memory);
+
+    function textProposal(string calldata text) external view returns (string calldata);
+
+    function registry() external view returns (IProposalRegistry);
+    function getUserVars(bytes4 selector) external view returns (string[] memory);
 }

@@ -6,9 +6,11 @@ import "../interfaces/IRouter.sol";
 import "../interfaces/IProposalRegistry.sol";
 import {Proposal, Transaction, Status} from "./ProposalRegistry.sol";
 import "openzeppelin/utils/introspection/ERC165.sol";
+import "openzeppelin/utils/introspection/IERC165.sol";
 
-abstract contract Router is ERC165, IRouter {
-    mapping(bytes4 => string[]) public userVars; // UI Report to frontent purposes
+contract Router is ERC165, IRouter {
+    mapping(bytes4 => string[]) private userVars; // UI Report to frontent purposes
+
     IProposalRegistry public registry;
 
     constructor(IProposalRegistry _registry) {
@@ -40,23 +42,28 @@ abstract contract Router is ERC165, IRouter {
     function _onVoteStart(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
         internal
         virtual
-        returns (bytes memory);
+        returns (bytes memory)
+    {}
 
     function _processVote(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
         internal
         virtual
-        returns (bytes memory);
+        returns (bytes memory)
+    {}
 
     /**
      * @param text Any text to vote for: link, message, id, etc.
      */
-    function textProposal(string calldata text) external view returns (string calldata) {
+    function textProposal(string calldata text) external view virtual returns (string calldata) {
         require(msg.sender == address(registry), "Only registry can call it");
-
         return text;
     }
 
-    function _setUserVars(bytes4 funcSelector, string[] calldata vars) internal {
+    function _setUserVars(bytes4 funcSelector, string[] calldata vars) internal virtual {
         userVars[funcSelector] = vars;
+    }
+
+    function getUserVars(bytes4 funcSelector) external view returns (string[] memory) {
+        return userVars[funcSelector];
     }
 }

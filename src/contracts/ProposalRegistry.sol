@@ -44,7 +44,7 @@ enum VoteType {
     NO
 }
 
-abstract contract ProposalRegistry is ERC165, IProposalRegistry {
+contract ProposalRegistry is ERC165, IProposalRegistry {
     event ProposalCreated(uint256 indexed _propId);
     event ProposalAccepted(uint256 indexed _propId);
     event ProposalRejected(uint256 indexed _propId);
@@ -65,7 +65,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         return interfaceId == type(IProposalRegistry).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external {
+    function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
         require(proposals[_propId].status == Status.NONE, "Proposal with this ID already exists");
         require(governance.isMember(msg.sender), "Proposal creator must be a member of the governance");
 
@@ -90,7 +90,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
     function _beforeCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
     function _afterCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
 
-    function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external {
+    function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
 
         Proposal storage proposal = proposals[_propId];
@@ -140,7 +140,7 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function voteResult(uint256 _propId) public view virtual returns (VoteType) {}
 
-    function execute(uint256 _propId) external {
+    function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
 
         Proposal storage proposal = proposals[_propId];
@@ -161,11 +161,11 @@ abstract contract ProposalRegistry is ERC165, IProposalRegistry {
         emit ProposalExecuted(_propId);
     }
 
-    function proposalExpired(uint256 _propId) public view returns (bool) {
+    function proposalExpired(uint256 _propId) public view virtual returns (bool) {
         return proposals[_propId].creationTime + proposalExpirationTime > block.timestamp;
     }
 
-    function getProposal(uint256 _propId) public view returns (Proposal memory) {
+    function getProposal(uint256 _propId) public view virtual returns (Proposal memory) {
         return proposals[_propId];
     }
 }
