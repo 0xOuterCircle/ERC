@@ -66,8 +66,15 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
-        require(proposals[_propId].status == Status.NONE, "Proposal with this ID already exists");
         require(governance.isMember(msg.sender), "Proposal creator must be a member of the governance");
+
+        Proposal storage prop = proposals[_propId];
+
+        require(prop.status == Status.NONE, "Proposal with this ID already exists");
+
+        prop.status = Status.EXISTS;
+        prop.creationBlock = block.number;
+        prop.creationTime = block.timestamp;
 
         // check for IRouter interface supporting
         for (uint256 i = 0; i < _pipeline.length; ++i) {
@@ -78,25 +85,17 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
                     "Router doesn't correspond IRouter interface"
                 );
             }
+            prop.pipeline.push(trans);
         }
-
-        _beforeCreateProposal(_propId, _pipeline);
-
-        proposals[_propId] = Proposal(Status.EXISTS, _pipeline, block.number, block.timestamp, 0, 0);
-
-        _afterCreateProposal(_propId, _pipeline);
     }
-
-    function _beforeCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
-    function _afterCreateProposal(uint256 _propId, Transaction[] calldata _pipeline) internal virtual {}
 
     function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
+        require(governance.isMember(msg.sender), "Only members of the governance can vote");
 
         Proposal storage proposal = proposals[_propId];
 
         require(proposal.status == Status.EXISTS, "Proposal must exist");
-        require(governance.isMember(msg.sender), "Only members of the governance can vote");
 
         uint256 votingPower_ = governance.votingPowerOf(msg.sender);
 
@@ -142,11 +141,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
+        require(governance.isMember(msg.sender), "Only members of the governance can execute");
 
         Proposal storage proposal = proposals[_propId];
 
         require(proposal.status == Status.ACCEPTED, "Proposal must be accepted");
-        require(governance.isMember(msg.sender), "Only members of the governance can execute");
 
         proposal.status = Status.EXECUTED;
 
