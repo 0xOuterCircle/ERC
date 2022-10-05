@@ -13,10 +13,10 @@ struct Transaction {
     uint256 value;
     bytes data;
     bytes response;
-    TransactionType transType;
+    TransType transType;
 }
 
-enum TransactionType {
+enum TransType {
     REGULAR,
     ROUTER
 }
@@ -79,7 +79,10 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         // check for IRouter interface supporting
         for (uint256 i = 0; i < _pipeline.length; ++i) {
             Transaction calldata trans = _pipeline[i];
-            if (trans.transType == TransactionType.ROUTER) {
+
+            require(trans.response.length == 0, "Response should be empty");
+
+            if (trans.transType == TransType.ROUTER) {
                 require(
                     IERC165(trans.to).supportsInterface(type(IRouter).interfaceId),
                     "Router doesn't correspond IRouter interface"
@@ -119,7 +122,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         uint256 routerIndex_;
         for (uint256 i = 0; i < proposal.pipeline.length; ++i) {
             Transaction storage trans = proposal.pipeline[i];
-            if (trans.transType == TransactionType.ROUTER) {
+            if (trans.transType == TransType.ROUTER) {
                 trans.data = IRouter(trans.to).onVote(_propId, i, _decision, _data[routerIndex_]);
                 routerIndex_ += 1;
             }
