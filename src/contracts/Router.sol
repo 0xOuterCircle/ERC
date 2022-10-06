@@ -25,7 +25,7 @@ contract Router is ERC165, IRouter {
         return interfaceId == type(IRouter).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function onVote(uint256 _propId, uint256 _transId, bool _vote, bytes calldata _voteData)
+    function onVote(uint256 _propId, uint256 _transId, bool _vote, uint256 _votingPower, bytes calldata _voteData)
         external
         virtual
         returns (bytes memory)
@@ -33,21 +33,42 @@ contract Router is ERC165, IRouter {
         Proposal memory prop = IProposalRegistry(msg.sender).getProposal(_propId);
         Transaction memory trans = prop.pipeline[_transId];
 
+        bytes32 sessionId_ = _getSessionId(_propId, _transId);
+
         if (prop.yesCount + prop.noCount == 0) {
-            _onVoteStart(prop, trans, _vote, _voteData);
+            _onVoteStart(sessionId_, prop, trans, _vote, _votingPower, _voteData);
         }
 
-        bytes memory transData = _processVote(prop, trans, _vote, _voteData);
+        bytes memory transData = _processVote(sessionId_, prop, trans, _vote, _votingPower, _voteData);
+
         return transData;
     }
 
-    function _onVoteStart(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
+    function _getSessionId(uint256 _propId, uint256 _transId) internal view returns (bytes32) {
+        return keccak256(abi.encode(msg.sender, _propId, _transId));
+    }
+
+    function _onVoteStart(
+        bytes32 _sessionId,
+        Proposal memory prop,
+        Transaction memory trans,
+        bool _vote,
+        uint256 _votingPower,
+        bytes calldata _voteData
+    )
         internal
         virtual
         returns (bytes memory)
     {}
 
-    function _processVote(Proposal memory prop, Transaction memory trans, bool _vote, bytes calldata _voteData)
+    function _processVote(
+        bytes32 _sessionId,
+        Proposal memory prop,
+        Transaction memory trans,
+        bool _vote,
+        uint256 _votingPower,
+        bytes calldata _voteData
+    )
         internal
         virtual
         returns (bytes memory)
