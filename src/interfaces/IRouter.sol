@@ -11,7 +11,5 @@ interface IRouter is IERC165 {
         returns (bytes memory);
 
     function textProposal(string calldata text) external view returns (string calldata);
-
-    function registry() external view returns (IProposalRegistry);
     function getUserVars(bytes4 selector) external view returns (string[] memory);
 }

@@ -11,10 +11,14 @@ import "openzeppelin/utils/introspection/IERC165.sol";
 contract Router is ERC165, IRouter {
     mapping(bytes4 => string[]) private userVars; // UI Report to frontent purposes
 
-    IProposalRegistry public registry;
+    string public name;
+    string public description;
+    string public logoUrl;
 
-    constructor(IProposalRegistry _registry) {
-        registry = _registry;
+    constructor(string memory _name, string memory _description, string memory _logoUrl) {
+        name = _name;
+        description = _description;
+        logoUrl = _logoUrl;
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
@@ -26,8 +30,6 @@ contract Router is ERC165, IRouter {
         virtual
         returns (bytes memory)
     {
-        require(msg.sender == address(registry), "Only registry can call it");
-
         Proposal memory prop = IProposalRegistry(msg.sender).getProposal(_propId);
         Transaction memory trans = prop.pipeline[_transId];
 
@@ -55,7 +57,6 @@ contract Router is ERC165, IRouter {
      * @param text Any text to vote for: link, message, id, etc.
      */
     function textProposal(string calldata text) external view virtual returns (string calldata) {
-        require(msg.sender == address(registry), "Only registry can call it");
         return text;
     }
 
