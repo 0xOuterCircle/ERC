@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IRouter.sol";
-import "../interfaces/IProposalRegistry.sol";
+import "interfaces/IRouter.sol";
+import "interfaces/IProposalRegistry.sol";
 import {Proposal, Transaction, Status} from "./ProposalRegistry.sol";
-import "openzeppelin/utils/introspection/ERC165.sol";
-import "openzeppelin/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract Router is ERC165, IRouter {
     mapping(bytes4 => string[]) private userVars; // UI Report to frontent purposes

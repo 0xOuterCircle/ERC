@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "openzeppelin/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "./IProposalRegistry.sol";
 
 interface IRouter is IERC165 {

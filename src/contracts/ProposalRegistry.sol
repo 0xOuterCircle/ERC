@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IGovernance.sol";
-import "../interfaces/IRouter.sol";
+import "interfaces/IGovernance.sol";
+import "interfaces/IRouter.sol";
 import {IProposalRegistry} from "../interfaces/IProposalRegistry.sol";
-import "openzeppelin/utils/introspection/ERC165.sol";
-import "openzeppelin/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 struct Transaction {
     address to;

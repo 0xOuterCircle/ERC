@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import {Transaction, Proposal, VoteType} from "../contracts/ProposalRegistry.sol";
+import {Transaction, Proposal, VoteType} from "contracts/ProposalRegistry.sol";
 import "./IGovernance.sol";
-import "openzeppelin/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IProposalRegistry is IERC165 {
     function vote(uint256 propId, bool decision, bytes[] calldata data) external;
