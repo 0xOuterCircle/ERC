@@ -44,7 +44,7 @@ contract TestProposalRegistry is Test {
     function setUp() public {
         governance = new MockGovernance();
         registry = new ProposalRegistry(governance, 1 days);
-        router = new Router(registry);
+        router = new Router("test", "test description", "https://test.logo.url");
 
         governance.changeMember(address(this), true);
     }
