@@ -49,16 +49,25 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     event ProposalAccepted(uint256 indexed _propId);
     event ProposalRejected(uint256 indexed _propId);
     event ProposalExecuted(uint256 indexed _propId);
+    event VetoCasted(uint256 indexed _propId);
+    event ChildApproved(address indexed _registry, bool indexed _newStatus);
+    event ParentChanged(address indexed _oldParent, address indexed _newParent);
+    event ProposalExpirationTimeChanged(uint256 _oldTime, uint256 _newTime);
+    event GovernanceChanged(address indexed _oldGovernance, address indexed _newGovernance);
 
     mapping(address => mapping(uint256 => VoteType)) private voted;
+
+    mapping(IProposalRegistry => bool) public isChildRegistry;
 
     mapping(uint256 => Proposal) private proposals;
     IGovernance public governance;
     uint256 public proposalExpirationTime;
+    IProposalRegistry public parentRegistry;
 
-    constructor(IGovernance _governance, uint256 _proposalExpirationTime) {
+    constructor(IGovernance _governance, uint256 _proposalExpirationTime, IProposalRegistry _parentRegistry) {
         proposalExpirationTime = _proposalExpirationTime;
         governance = _governance;
+        parentRegistry = _parentRegistry;
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
@@ -163,11 +172,51 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         emit ProposalExecuted(_propId);
     }
 
+    function castVeto(uint256 _propId) external virtual {
+        require(msg.sender == address(parentRegistry), "This function can be called only by parent registry");
+
+        emit VetoCasted(_propId);
+
+        proposals[_propId].status = Status.REJECTED;
+    }
+
     function proposalExpired(uint256 _propId) public view virtual returns (bool) {
         return proposals[_propId].creationTime + proposalExpirationTime > block.timestamp;
     }
 
     function getProposal(uint256 _propId) public view virtual returns (Proposal memory) {
         return proposals[_propId];
+    }
+
+    function approveChildRegistry(IProposalRegistry _registry, bool _newStatus) external virtual {
+        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+
+        emit ChildApproved(address(_registry), _newStatus);
+
+        isChildRegistry[_registry] = _newStatus;
+    }
+
+    function changeProposalExpirationTime(uint256 _newTime) external virtual {
+        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+
+        emit ProposalExpirationTimeChanged(proposalExpirationTime, _newTime);
+
+        proposalExpirationTime = _newTime;
+    }
+
+    function changeGovernance(IGovernance _newGovernance) external virtual {
+        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+
+        emit GovernanceChanged(address(governance), address(_newGovernance));
+
+        governance = _newGovernance;
+    }
+
+    function changeParentRegistry(IProposalRegistry _newRegistry) external virtual {
+        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+
+        emit ParentChanged(address(parentRegistry), address(_newRegistry));
+
+        parentRegistry = _newRegistry;
     }
 }
