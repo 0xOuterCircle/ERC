@@ -30,7 +30,7 @@ contract UniswapRouter is Router {
         bytes32 _sessionId,
         Proposal memory prop,
         Transaction memory trans,
-        bool _vote,
+        VoteType _vote,
         uint256 _votePower,
         bytes calldata _voteData
     )
@@ -39,7 +39,7 @@ contract UniswapRouter is Router {
         returns (bytes memory)
     {
         Session storage session = sessions[_sessionId];
-        if (_vote == true) {
+        if (_vote == VoteType.YES) {
             uint256 amount_ = abi.decode(_voteData, (uint256)); // _voteData must be encoded uint256
             session.totalAmount += amount_ * _votePower;
             session.totalVotes += _votePower;
