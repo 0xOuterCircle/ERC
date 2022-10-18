@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "./IProposalRegistry.sol";
 
 interface IRouter is IERC165 {
-    function onVote(uint256 propId, uint256 transId, bool vote, uint256 votingPower, bytes calldata voteData)
+    function onVote(uint256 propId, uint256 transId, VoteType vote, uint256 votingPower, bytes calldata voteData)
         external
         returns (bytes memory);
 

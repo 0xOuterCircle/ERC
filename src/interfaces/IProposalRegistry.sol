@@ -7,9 +7,9 @@ import "./IGovernance.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IProposalRegistry is IERC165 {
-    function vote(uint256 propId, bool decision, bytes[] calldata data) external;
+    function vote(uint256 propId, VoteType decision, bytes[] calldata data) external;
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external;
-    function voteResult(uint256 propId) external view returns (VoteType);
+    function voteResult(uint256 propId) external view returns (bool);
     function execute(uint256 propId) external;
     function proposalExpired(uint256 propId) external view returns (bool);
 

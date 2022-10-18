@@ -25,7 +25,7 @@ contract Router is ERC165, IRouter {
         return interfaceId == type(IRouter).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function onVote(uint256 _propId, uint256 _transId, bool _vote, uint256 _votingPower, bytes calldata _voteData)
+    function onVote(uint256 _propId, uint256 _transId, VoteType _vote, uint256 _votingPower, bytes calldata _voteData)
         external
         virtual
         returns (bytes memory)
@@ -52,7 +52,7 @@ contract Router is ERC165, IRouter {
         bytes32 _sessionId,
         Proposal memory prop,
         Transaction memory trans,
-        bool _vote,
+        VoteType _vote,
         uint256 _votingPower,
         bytes calldata _voteData
     )
@@ -65,7 +65,7 @@ contract Router is ERC165, IRouter {
         bytes32 _sessionId,
         Proposal memory prop,
         Transaction memory trans,
-        bool _vote,
+        VoteType _vote,
         uint256 _votingPower,
         bytes calldata _voteData
     )

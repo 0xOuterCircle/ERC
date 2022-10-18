@@ -36,12 +36,14 @@ struct Proposal {
     uint256 creationTime;
     uint256 yesCount;
     uint256 noCount;
+    uint256 neutralCount;
 }
 
 enum VoteType {
     NONE,
     YES,
-    NO
+    NO,
+    NEUTRAL
 }
 
 contract ProposalRegistry is ERC165, IProposalRegistry {
@@ -62,12 +64,19 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     mapping(uint256 => Proposal) private proposals;
     IGovernance public governance;
     uint256 public proposalExpirationTime;
+    uint256 public quorumRequired;
     IProposalRegistry public parentRegistry;
 
-    constructor(IGovernance _governance, uint256 _proposalExpirationTime, IProposalRegistry _parentRegistry) {
+    constructor(
+        IGovernance _governance,
+        uint256 _proposalExpirationTime,
+        uint256 _quorumRequired,
+        IProposalRegistry _parentRegistry
+    ) {
         proposalExpirationTime = _proposalExpirationTime;
         governance = _governance;
         parentRegistry = _parentRegistry;
+        quorumRequired = _quorumRequired;
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
@@ -101,7 +110,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         }
     }
 
-    function vote(uint256 _propId, bool _decision, bytes[] calldata _data) external virtual {
+    function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
         require(governance.isMember(msg.sender), "Only members of the governance can vote");
 
@@ -121,10 +130,18 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
             proposal.noCount -= votingPower_;
         }
 
-        if (_decision) {
+        if (voted[msg.sender][_propId] == VoteType.NEUTRAL) {
+            proposal.neutralCount -= votingPower_;
+        }
+
+        voted[msg.sender][_propId] = _decision;
+
+        if (_decision == VoteType.YES) {
             proposal.yesCount += votingPower_;
-        } else {
+        } else if (_decision == VoteType.NO) {
             proposal.noCount += votingPower_;
+        } else if (_decision == VoteType.NEUTRAL) {
+            proposal.neutralCount += votingPower_;
         }
 
         // updating router-transactions states
@@ -137,19 +154,22 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
             }
         }
 
-        voted[msg.sender][_propId] = _decision ? VoteType.YES : VoteType.NO;
-
-        VoteType result = voteResult(_propId);
-        if (result == VoteType.YES) {
+        bool result = voteResult(_propId);
+        if (result) {
             proposal.status = Status.ACCEPTED;
             emit ProposalAccepted(_propId);
-        } else if (result == VoteType.NO) {
+        } else {
             proposal.status = Status.REJECTED;
             emit ProposalRejected(_propId);
         }
     }
 
-    function voteResult(uint256 _propId) public view virtual returns (VoteType) {}
+    function voteResult(uint256 _propId) public view virtual returns (bool) {
+        Proposal storage proposal = proposals[_propId];
+
+        uint256 totalVotes_ = proposal.yesCount + proposal.noCount + proposal.neutralCount;
+        return proposal.yesCount > proposal.noCount && totalVotes_ <= quorumRequired;
+    }
 
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
