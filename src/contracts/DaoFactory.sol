@@ -9,17 +9,18 @@ contract DaoFactory {
     event DaoCreated(address indexed _proposalRegistry, address indexed _governance);
 
     function deployDao(
-        Governance _governance,
+        address _governance,
         uint256 _proposalExpirationTime,
         uint256 _quorumRequired,
-        IProposalRegistry _parentRegistry
+        address _parentRegistry
     )
         external
         returns (ProposalRegistry registry)
     {
-        Governance governance_ = address(_governance) == address(0) ? new Governance() : _governance;
+        Governance governance_ = _governance == address(0) ? new Governance() : Governance(_governance);
 
-        registry = new ProposalRegistry(governance_, _proposalExpirationTime, _quorumRequired, _parentRegistry);
+        registry =
+        new ProposalRegistry(governance_, _proposalExpirationTime, _quorumRequired, IProposalRegistry(_parentRegistry));
 
         emit DaoCreated(address(registry), address(governance_));
     }

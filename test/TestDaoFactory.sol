@@ -14,7 +14,7 @@ contract TestUniswapRouter is Test, DaoFactory {
     }
 
     function testDeployDao() public {
-        ProposalRegistry res = daoFactory.deployDao(Governance(address(0)), 3600, 228, ProposalRegistry(address(0)));
+        ProposalRegistry res = daoFactory.deployDao(address(0), 3600, 228, address(0));
         assertFalse(address(res) == address(0));
     }
 }
