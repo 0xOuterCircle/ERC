@@ -52,7 +52,8 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     event ProposalRejected(uint256 indexed _propId);
     event ProposalExecuted(uint256 indexed _propId);
     event VetoCasted(uint256 indexed _propId);
-    event ChildApproved(address indexed _registry, bool indexed _newStatus);
+    event ChildApproved(address indexed _registry);
+    event ChildRemoved(address indexed _registry);
     event ParentChanged(address indexed _oldParent, address indexed _newParent);
     event ProposalExpirationTimeChanged(uint256 _oldTime, uint256 _newTime);
     event GovernanceChanged(address indexed _oldGovernance, address indexed _newGovernance);
@@ -84,7 +85,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
-        require(governance.isProposalCreator(msg.sender), "Require proposal creator role");
+        require(governance.isProposalCreator(msg.sender), "Sender cannot create proposals");
 
         Proposal storage prop = proposals[_propId];
 
@@ -112,7 +113,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isProposalVoter(msg.sender), "Require proposal voter role");
+        require(governance.isProposalVoter(msg.sender), "Sender cannot vote for proposals");
 
         Proposal storage proposal = proposals[_propId];
 
@@ -168,12 +169,12 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         Proposal storage proposal = proposals[_propId];
 
         uint256 totalVotes_ = proposal.yesCount + proposal.noCount + proposal.neutralCount;
-        return proposal.yesCount > proposal.noCount && totalVotes_ <= quorumRequired;
+        return proposal.yesCount > proposal.noCount && totalVotes_ >= quorumRequired;
     }
 
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isProposalExecuter(msg.sender), "Require proposal executer role");
+        require(governance.isProposalExecuter(msg.sender), "Sender cannot execute proposal");
 
         Proposal storage proposal = proposals[_propId];
 
@@ -193,7 +194,10 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function castVeto(uint256 _propId) external virtual {
-        require(msg.sender == address(parentRegistry), "This function can be called only by parent registry");
+        require(
+            msg.sender == address(parentRegistry) || governance.isVetoCaster(msg.sender),
+            "This function can be called only by parent registry or specific role"
+        );
 
         emit VetoCasted(_propId);
 
@@ -208,16 +212,35 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         return proposals[_propId];
     }
 
-    function approveChildRegistry(IProposalRegistry _registry, bool _newStatus) external virtual {
-        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+    function addChildRegistry(IProposalRegistry _registry) external virtual {
+        require(governance.isSubDaoApprover(msg.sender), "Sender cannot add sub dao");
+        require(
+            address(_registry.parentRegistry()) == address(this), "This registry must be parent registry of the child"
+        );
+        require(!isChildRegistry[_registry], "The registry is already a child");
 
-        emit ChildApproved(address(_registry), _newStatus);
+        emit ChildApproved(address(_registry));
 
-        isChildRegistry[_registry] = _newStatus;
+        isChildRegistry[_registry] = true;
+    }
+
+    function removeChildRegistry(IProposalRegistry _registry) external virtual {
+        require(
+            msg.sender == address(this) || governance.isSubDaoRemover(msg.sender),
+            "This function can be called only by DAO proposal or specific role"
+        );
+        require(isChildRegistry[_registry], "The registry is not a child");
+
+        emit ChildRemoved(address(_registry));
+
+        isChildRegistry[_registry] = false;
     }
 
     function changeProposalExpirationTime(uint256 _newTime) external virtual {
-        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+        require(
+            msg.sender == address(this) || governance.isProposalExpirationTimeChanger(msg.sender),
+            "This function can be called only by DAO proposal or specific role"
+        );
 
         emit ProposalExpirationTimeChanged(proposalExpirationTime, _newTime);
 
@@ -225,7 +248,10 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function changeGovernance(IGovernance _newGovernance) external virtual {
-        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+        require(
+            msg.sender == address(this) || governance.isGovernanceChanger(msg.sender),
+            "This function can be called only by DAO proposal or specific role"
+        );
 
         emit GovernanceChanged(address(governance), address(_newGovernance));
 
@@ -233,7 +259,10 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function changeParentRegistry(IProposalRegistry _newRegistry) external virtual {
-        require(msg.sender == address(this), "This function can be called only by DAO proposal");
+        require(
+            msg.sender == address(this) || governance.isParentRegistryChanger(msg.sender),
+            "This function can be called only by DAO proposal or specific role"
+        );
 
         emit ParentChanged(address(parentRegistry), address(_newRegistry));
 

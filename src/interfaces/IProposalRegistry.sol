@@ -16,4 +16,5 @@ interface IProposalRegistry is IERC165 {
     function getProposal(uint256 propId) external view returns (Proposal memory);
     function governance() external view returns (IGovernance);
     function proposalExpirationTime() external view returns (uint256);
+    function parentRegistry() external view returns (IProposalRegistry);
 }
