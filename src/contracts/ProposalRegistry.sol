@@ -84,7 +84,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
-        require(governance.isMember(msg.sender), "Proposal creator must be a member of the governance");
+        require(governance.isProposalCreator(msg.sender), "Require proposal creator role");
 
         Proposal storage prop = proposals[_propId];
 
@@ -112,7 +112,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isMember(msg.sender), "Only members of the governance can vote");
+        require(governance.isProposalVoter(msg.sender), "Require proposal voter role");
 
         Proposal storage proposal = proposals[_propId];
 
@@ -173,7 +173,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isMember(msg.sender), "Only members of the governance can execute");
+        require(governance.isProposalExecuter(msg.sender), "Require proposal executer role");
 
         Proposal storage proposal = proposals[_propId];
 

@@ -9,7 +9,15 @@ contract Governance is IGovernance {
         return 228e18;
     }
 
-    function isMember(address _who) external pure returns (bool) {
+    function isProposalCreator(address _who) external pure returns (bool) {
+        return true;
+    }
+
+    function isProposalVoter(address _who) external pure returns (bool) {
+        return true;
+    }
+
+    function isProposalExecuter(address _who) external pure returns (bool) {
         return true;
     }
 
