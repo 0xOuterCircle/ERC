@@ -12,4 +12,8 @@ contract Governance is IGovernance {
     function isMember(address _who) external pure returns (bool) {
         return true;
     }
+
+    function totalVotingPower() external pure returns (uint256) {
+        return 228e18;
+    }
 }
