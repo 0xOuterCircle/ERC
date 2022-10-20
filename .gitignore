@@ -1,6 +1,7 @@
 # Compiler files
 cache/
 out/
+bin
 
 # Ignores development broadcast logs
 !/broadcast
@@ -9,3 +10,7 @@ out/
 
 # Dotenv file
 .env
+
+# foundry stuff
+.gas-snapshot
+lib
