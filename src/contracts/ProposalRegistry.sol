@@ -85,7 +85,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
-        require(governance.isProposalCreator(msg.sender), "Sender cannot create proposals");
+        require(governance.isProposalCreator(msg.sender), "This function can be called only by specific role");
 
         Proposal storage prop = proposals[_propId];
 
@@ -113,7 +113,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isProposalVoter(msg.sender), "Sender cannot vote for proposals");
+        require(governance.isProposalVoter(msg.sender), "This function can be called only by specific role");
 
         Proposal storage proposal = proposals[_propId];
 
@@ -174,7 +174,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
-        require(governance.isProposalExecuter(msg.sender), "Sender cannot execute proposal");
+        require(governance.isProposalExecuter(msg.sender), "This function can be called only by specific role");
 
         Proposal storage proposal = proposals[_propId];
 
@@ -194,10 +194,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function castVeto(uint256 _propId) external virtual {
-        require(
-            msg.sender == address(parentRegistry) || governance.isVetoCaster(msg.sender),
-            "This function can be called only by parent registry or specific role"
-        );
+        require(governance.isVetoCaster(msg.sender), "This function can be called only by specific role");
 
         emit VetoCasted(_propId);
 
@@ -212,11 +209,8 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         return proposals[_propId];
     }
 
-    function addChildRegistry(IProposalRegistry _registry) external virtual {
-        require(
-            msg.sender == address(parentRegistry) || governance.isSubDaoApprover(msg.sender),
-            "This function can be called only by parent registry or specific role"
-        );
+    function approveChildRegistry(IProposalRegistry _registry) external virtual {
+        require(governance.isSubDaoApprover(msg.sender), "This function can be called only by specific role");
         require(
             address(_registry.parentRegistry()) == address(this), "This registry must be parent registry of the child"
         );
@@ -228,10 +222,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function removeChildRegistry(IProposalRegistry _registry) external virtual {
-        require(
-            msg.sender == address(this) || governance.isSubDaoRemover(msg.sender),
-            "This function can be called only by DAO proposal or specific role"
-        );
+        require(governance.isSubDaoRemover(msg.sender), "This function can be called only by specific role");
         require(isChildRegistry[_registry], "The registry is not a child");
 
         emit ChildRemoved(address(_registry));
@@ -241,8 +232,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
 
     function changeProposalExpirationTime(uint256 _newTime) external virtual {
         require(
-            msg.sender == address(this) || governance.isProposalExpirationTimeChanger(msg.sender),
-            "This function can be called only by DAO proposal or specific role"
+            governance.isProposalExpirationTimeChanger(msg.sender), "This function can be called only by specific role"
         );
 
         emit ProposalExpirationTimeChanged(proposalExpirationTime, _newTime);
@@ -251,10 +241,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function changeGovernance(IGovernance _newGovernance) external virtual {
-        require(
-            msg.sender == address(this) || governance.isGovernanceChanger(msg.sender),
-            "This function can be called only by DAO proposal or specific role"
-        );
+        require(governance.isGovernanceChanger(msg.sender), "This function can be called only by specific role");
 
         emit GovernanceChanged(address(governance), address(_newGovernance));
 
@@ -262,10 +249,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function changeParentRegistry(IProposalRegistry _newRegistry) external virtual {
-        require(
-            msg.sender == address(this) || governance.isParentRegistryChanger(msg.sender),
-            "This function can be called only by DAO proposal or specific role"
-        );
+        require(governance.isParentRegistryChanger(msg.sender), "This function can be called only by specific role");
 
         emit ParentChanged(address(parentRegistry), address(_newRegistry));
 
