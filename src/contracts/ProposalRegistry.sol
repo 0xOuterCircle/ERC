@@ -213,7 +213,10 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function addChildRegistry(IProposalRegistry _registry) external virtual {
-        require(governance.isSubDaoApprover(msg.sender), "Sender cannot add sub dao");
+        require(
+            msg.sender == address(parentRegistry) || governance.isSubDaoApprover(msg.sender),
+            "This function can be called only by parent registry or specific role"
+        );
         require(
             address(_registry.parentRegistry()) == address(this), "This registry must be parent registry of the child"
         );
