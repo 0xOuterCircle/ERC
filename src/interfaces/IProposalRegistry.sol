@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IProposalRegistry is IERC165 {
     function vote(uint256 propId, VoteType decision, bytes[] calldata data) external;
-    function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external;
+    function createProposal(Transaction[] calldata _pipeline) external;
     function execute(uint256 propId) external;
     function castVeto(uint256 propId) external;
     function approveChildRegistry(IProposalRegistry registry) external;

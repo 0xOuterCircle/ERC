@@ -61,6 +61,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     mapping(address => mapping(uint256 => VoteType)) private voted;
 
     mapping(IProposalRegistry => bool) public isChildRegistry;
+    uint256 private proposalCounter;
 
     mapping(uint256 => Proposal) private proposals;
     IGovernance public governance;
@@ -84,10 +85,12 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         return interfaceId == type(IProposalRegistry).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function createProposal(uint256 _propId, Transaction[] calldata _pipeline) external virtual {
+    function createProposal(Transaction[] calldata _pipeline) external virtual {
         require(governance.isProposalCreator(msg.sender), "This function can be called only by specific role");
 
-        Proposal storage prop = proposals[_propId];
+        uint256 propId_ = proposalCounter++;
+        
+        Proposal storage prop = proposals[propId_];
 
         require(prop.status == Status.NONE, "Proposal with this ID already exists");
 
@@ -109,6 +112,8 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
             }
             prop.pipeline.push(trans);
         }
+
+        emit ProposalCreated(propId_);
     }
 
     function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {

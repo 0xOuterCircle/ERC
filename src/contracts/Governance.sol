@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 import "interfaces/IGovernance.sol";
 
 contract Governance is IGovernance {
+    mapping(address => bool) members;
+    mapping(address => uint256) powers;
+
     function votingPowerOf(address _who) external pure returns (uint256) {
         return 228e18;
     }
@@ -47,5 +50,13 @@ contract Governance is IGovernance {
 
     function totalVotingPower() external pure returns (uint256) {
         return 228e18;
+    }
+
+    function changeMember(address who, bool to) external {
+        members[who] = to;
+    }
+
+    function changePower(address who, uint256 to) external {
+        powers[who] = to;
     }
 }

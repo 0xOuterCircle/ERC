@@ -5,28 +5,8 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "contracts/ProposalRegistry.sol";
 import "contracts/Router.sol";
+import "contracts/Governance.sol";
 import "forge-std/console.sol";
-
-contract MockGovernance is IGovernance {
-    mapping(address => bool) members;
-    mapping(address => uint256) powers;
-
-    function votingPowerOf(address who) external view returns (uint256) {
-        return powers[who];
-    }
-
-    function isMember(address who) external view returns (bool) {
-        return members[who];
-    }
-
-    function changeMember(address who, bool to) external {
-        members[who] = to;
-    }
-
-    function changePower(address who, uint256 to) external {
-        powers[who] = to;
-    }
-}
 
 contract MockCounter {
     uint256 public value;
@@ -37,12 +17,12 @@ contract MockCounter {
 }
 
 contract TestProposalRegistry is Test {
-    MockGovernance governance;
+    Governance governance;
     ProposalRegistry registry;
     Router router;
 
     function setUp() public {
-        governance = new MockGovernance();
+        governance = new Governance();
         registry = new ProposalRegistry(governance, 1 days, 228e18, ProposalRegistry(address(0)));
         router = new Router("test", "test description", "https://test.logo.url");
 
@@ -56,7 +36,7 @@ contract TestProposalRegistry is Test {
 
     function testCreateEmptyProposal() public {
         Transaction[] memory pipeline;
-        registry.createProposal(0, pipeline);
+        registry.createProposal(pipeline);
     }
 
     function testCreateProposal() public {
@@ -70,6 +50,6 @@ contract TestProposalRegistry is Test {
             response: bytes(""),
             transType: TransType.REGULAR
         });
-        registry.createProposal(0, pipeline);
+        registry.createProposal(pipeline);
     }
 }

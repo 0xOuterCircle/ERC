@@ -19,8 +19,7 @@ contract DaoFactory {
     {
         Governance governance_ = _governance == address(0) ? new Governance() : Governance(_governance);
 
-        registry =
-        new ProposalRegistry(governance_, _proposalExpirationTime, _quorumRequired, IProposalRegistry(_parentRegistry));
+        registry = new ProposalRegistry(governance_, _proposalExpirationTime, _quorumRequired, IProposalRegistry(_parentRegistry));
 
         emit DaoCreated(address(registry), address(governance_));
     }
