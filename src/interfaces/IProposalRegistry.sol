@@ -2,9 +2,46 @@
 
 pragma solidity ^0.8.0;
 
-import {Transaction, Proposal, VoteType} from "contracts/ProposalRegistry.sol";
 import "./IGovernance.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+struct Transaction {
+    address to;
+    uint256 value;
+    bytes data;
+    bytes response;
+    TransType transType;
+}
+
+enum TransType {
+    REGULAR,
+    ROUTER
+}
+
+enum Status {
+    NONE,
+    EXISTS,
+    ACCEPTED,
+    EXECUTED,
+    REJECTED
+}
+
+struct Proposal {
+    Status status;
+    Transaction[] pipeline;
+    uint256 creationBlock;
+    uint256 creationTime;
+    uint256 yesCount;
+    uint256 noCount;
+    uint256 neutralCount;
+}
+
+enum VoteType {
+    NONE,
+    YES,
+    NO,
+    NEUTRAL
+}
 
 interface IProposalRegistry is IERC165 {
     function vote(uint256 propId, VoteType decision, bytes[] calldata data) external;

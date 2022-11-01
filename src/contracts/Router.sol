@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import "interfaces/IRouter.sol";
 import "interfaces/IProposalRegistry.sol";
-import {Proposal, Transaction, Status} from "./ProposalRegistry.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 

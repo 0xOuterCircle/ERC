@@ -4,47 +4,10 @@ pragma solidity ^0.8.0;
 
 import "interfaces/IGovernance.sol";
 import "interfaces/IRouter.sol";
-import {IProposalRegistry} from "../interfaces/IProposalRegistry.sol";
+import "interfaces/IProposalRegistry.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-struct Transaction {
-    address to;
-    uint256 value;
-    bytes data;
-    bytes response;
-    TransType transType;
-}
-
-enum TransType {
-    REGULAR,
-    ROUTER
-}
-
-enum Status {
-    NONE,
-    EXISTS,
-    ACCEPTED,
-    EXECUTED,
-    REJECTED
-}
-
-struct Proposal {
-    Status status;
-    Transaction[] pipeline;
-    uint256 creationBlock;
-    uint256 creationTime;
-    uint256 yesCount;
-    uint256 noCount;
-    uint256 neutralCount;
-}
-
-enum VoteType {
-    NONE,
-    YES,
-    NO,
-    NEUTRAL
-}
 
 contract ProposalRegistry is ERC165, IProposalRegistry {
     event ProposalCreated(uint256 indexed _propId);
@@ -207,7 +170,7 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     }
 
     function proposalExpired(uint256 _propId) public view virtual returns (bool) {
-        return proposals[_propId].creationTime + proposalExpirationTime > block.timestamp;
+        return proposals[_propId].creationTime + proposalExpirationTime < block.timestamp;
     }
 
     function getProposal(uint256 _propId) public view virtual returns (Proposal memory) {

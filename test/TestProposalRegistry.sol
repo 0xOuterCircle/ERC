@@ -52,4 +52,24 @@ contract TestProposalRegistry is Test {
         });
         registry.createProposal(pipeline);
     }
+
+    function testVote() public {
+        MockCounter counter = new MockCounter();
+
+        Transaction[] memory pipeline = new Transaction[](1);
+        pipeline[0] = Transaction({
+            to: address(counter),
+            value: 0,
+            data: abi.encodeWithSignature("add(uint256)", 1),
+            response: bytes(""),
+            transType: TransType.REGULAR
+        });
+        registry.createProposal(pipeline);
+
+        bytes[] memory none;
+        registry.vote(0, VoteType.YES, none);
+
+        assertEq(registry.getProposal(0).yesCount, 228e18);
+        assertTrue(registry.getProposal(0).status == Status.ACCEPTED); 
+    }
 }
