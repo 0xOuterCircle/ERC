@@ -6,11 +6,11 @@ import "./IGovernance.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 struct Transaction {
-    address to;
-    uint256 value;
-    bytes data;
-    bytes response;
-    TransType transType;
+    address to; // address of the contract or EoA to call to
+    uint256 value; // amount of ETH attaching to the transaction
+    bytes data; // encoded transaction body
+    bytes response; // transaction result, empty from start
+    TransType transType; // transaction type
 }
 
 enum TransType {
@@ -19,7 +19,7 @@ enum TransType {
 }
 
 enum Status {
-    NONE,
+    NONE, // for uncreated proposals
     EXISTS,
     ACCEPTED,
     EXECUTED,
@@ -27,23 +27,26 @@ enum Status {
 }
 
 struct Proposal {
-    Status status;
-    Transaction[] pipeline;
-    uint256 creationBlock;
-    uint256 creationTime;
-    uint256 yesCount;
-    uint256 noCount;
-    uint256 neutralCount;
+    Status status; // proposal status
+    Transaction[] pipeline; // list of transactions to execute
+    uint256 creationBlock; // blocknumber when proposal was created
+    uint256 creationTime; // block timestamp when proposal was created
+    uint256 yesCount; // number of positive votes
+    uint256 noCount; // number of negative votes
+    uint256 neutralCount; // number of abstains
 }
 
 enum VoteType {
-    NONE,
+    NONE, // didn't vote
     YES,
     NO,
     NEUTRAL
 }
 
 interface IProposalRegistry is IERC165 {
+    /**
+     *
+     */
     function vote(uint256 propId, VoteType decision, bytes[] calldata data) external;
     function createProposal(Transaction[] calldata _pipeline) external;
     function execute(uint256 propId) external;
