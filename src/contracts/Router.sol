@@ -8,11 +8,15 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract Router is ERC165, IRouter {
-    mapping(bytes4 => string[]) private userVars; // UI Report to frontent purposes
+    // ==================== STORAGE ====================
 
-    string public name;
-    string public description;
-    string public logoUrl;
+    mapping(bytes4 => string[]) private userVars; // Mapping from func selector to list of names of parameters that user can fill. Frontend needs it
+
+    string public name; // name of the Router
+    string public description; // description of the Router
+    string public logoUrl; // logo url of the Router
+
+    // ==================== CONSTRUCTOR ====================
 
     constructor(string memory _name, string memory _description, string memory _logoUrl) {
         name = _name;
@@ -20,10 +24,48 @@ contract Router is ERC165, IRouter {
         logoUrl = _logoUrl;
     }
 
+    // ==================== PUBLIC FUNCTIONS ====================
+
+    /**
+     * @notice ERC165 interface support
+     * @dev Need to identify ProposalRegistry
+     * @param interfaceId unique id of the interface
+     * @return Support or not
+     */
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
         return interfaceId == type(IRouter).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    /**
+     * @notice Get parameters that user can fill while creating proposal
+     * @dev For frontend purpises
+     * @param funcSelector Selector of the function to check params of
+     * @return List of user-to-fill params names
+     */
+    function getUserVars(bytes4 funcSelector) external view returns (string[] memory) {
+        return userVars[funcSelector];
+    }
+
+    // ==================== EXECUTIVE FUNCTIONS ====================
+
+    /**
+     * @notice Blank proposal, Snapshot proposal, Text proposal
+     * @dev If DAO wants to vote on-chain for some off-chain proposal, they can use this function in proposal
+     * @param text Any text to vote for: link, message, id, etc.
+     * @return Always exactly the same text
+     */
+    function textProposal(string calldata text) external view virtual returns (string calldata) {
+        return text;
+    }
+
+    // ==================== REGISTRY FUNCTIONS ====================
+
+    /**
+     * @dev Function which is called every time when someone vote for proposal which contains this Router transaction.
+     * This function recalculates proposal CALLDATA (changes some parameters or something)
+     * and returns new calldata of the transaction back to the ProposalRegistry
+     * @return New CALLDATA of the Router transaction (changes proposal)
+     */
     function onVote(uint256 _propId, uint256 _transId, VoteType _vote, uint256 _votingPower, bytes calldata _voteData)
         external
         virtual
@@ -42,6 +84,8 @@ contract Router is ERC165, IRouter {
 
         return transData;
     }
+
+    // ==================== INTERNAL FUNCTIONS ====================
 
     function _getSessionId(uint256 _propId, uint256 _transId) internal view returns (bytes32) {
         return keccak256(abi.encode(msg.sender, _propId, _transId));
@@ -73,18 +117,7 @@ contract Router is ERC165, IRouter {
         returns (bytes memory)
     {}
 
-    /**
-     * @param text Any text to vote for: link, message, id, etc.
-     */
-    function textProposal(string calldata text) external view virtual returns (string calldata) {
-        return text;
-    }
-
     function _setUserVars(bytes4 funcSelector, string[] calldata vars) internal virtual {
         userVars[funcSelector] = vars;
-    }
-
-    function getUserVars(bytes4 funcSelector) external view returns (string[] memory) {
-        return userVars[funcSelector];
     }
 }

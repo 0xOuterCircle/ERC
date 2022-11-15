@@ -44,9 +44,6 @@ enum VoteType {
 }
 
 interface IProposalRegistry is IERC165 {
-    /**
-     *
-     */
     function vote(uint256 propId, VoteType decision, bytes[] calldata data) external;
     function createProposal(Transaction[] calldata _pipeline) external;
     function execute(uint256 propId) external;

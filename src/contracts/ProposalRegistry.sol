@@ -8,8 +8,9 @@ import "interfaces/IProposalRegistry.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-
 contract ProposalRegistry is ERC165, IProposalRegistry {
+    // ==================== EVENTS ====================
+
     event ProposalCreated(uint256 indexed _propId);
     event ProposalAccepted(uint256 indexed _propId);
     event ProposalRejected(uint256 indexed _propId);
@@ -21,16 +22,18 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
     event ProposalExpirationTimeChanged(uint256 _oldTime, uint256 _newTime);
     event GovernanceChanged(address indexed _oldGovernance, address indexed _newGovernance);
 
-    mapping(address => mapping(uint256 => VoteType)) private voted;
+    // ==================== STORAGE ====================
 
-    mapping(IProposalRegistry => bool) public isChildRegistry;
-    uint256 private proposalCounter;
+    mapping(address => mapping(uint256 => VoteType)) private voted; // to track users previous votes for proposals by proposal id
+    mapping(IProposalRegistry => bool) public isChildRegistry; // dict of sub-DAOs
+    uint256 private proposalCounter; // to change proposal IDs
+    mapping(uint256 => Proposal) private proposals; // dict of all proposals by id
+    IGovernance public governance; // DAO Governance contract
+    uint256 public proposalExpirationTime; // time proposal to be able to vote for
+    uint256 public quorumRequired; // minimal total number of votes to accept proposal
+    IProposalRegistry public parentRegistry; // address of parrent registry (of which current registry is child of)
 
-    mapping(uint256 => Proposal) private proposals;
-    IGovernance public governance;
-    uint256 public proposalExpirationTime;
-    uint256 public quorumRequired;
-    IProposalRegistry public parentRegistry;
+    // ==================== CONSTRUCTOR ====================
 
     constructor(
         IGovernance _governance,
@@ -44,15 +47,28 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         quorumRequired = _quorumRequired;
     }
 
+    // ==================== DAO FUNCTIONS ====================
+
+    /**
+     * @notice ERC165 interface support
+     * @dev Need to identify ProposalRegistry
+     * @param interfaceId unique id of the interface
+     * @return Support or not
+     */
     function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165, IERC165) returns (bool) {
         return interfaceId == type(IProposalRegistry).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    /**
+     * @notice Create proposal
+     * @dev Can be called only by proposalCreator role
+     * @param _pipeline List of transactions proposed to execute
+     */
     function createProposal(Transaction[] calldata _pipeline) external virtual {
         require(governance.isProposalCreator(msg.sender), "This function can be called only by specific role");
 
         uint256 propId_ = proposalCounter++;
-        
+
         Proposal storage prop = proposals[propId_];
 
         require(prop.status == Status.NONE, "Proposal with this ID already exists");
@@ -79,6 +95,13 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         emit ProposalCreated(propId_);
     }
 
+    /**
+     * @notice Vote for proposal
+     * @dev Can be called only by proposalVoter role
+     * @param propId id of proposal
+     * @param decision vote decision (1 - yes, 2 - no, 3 - neutral)
+     * @param data list of transactions calldata
+     */
     function vote(uint256 _propId, VoteType _decision, bytes[] calldata _data) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
         require(governance.isProposalVoter(msg.sender), "This function can be called only by specific role");
@@ -133,6 +156,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         }
     }
 
+    /**
+     * @notice Result of proposal voting
+     * @param _propId proposal ID
+     * @return Accepted or not
+     */
     function voteResult(uint256 _propId) public view virtual returns (bool) {
         Proposal storage proposal = proposals[_propId];
 
@@ -140,6 +168,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         return proposal.yesCount > proposal.noCount && totalVotes_ >= quorumRequired;
     }
 
+    /**
+     * @notice Execute all transactions in accepted proposal
+     * @dev Can be called only by proposalExecuter role
+     * @param _propId proposal ID
+     */
     function execute(uint256 _propId) external virtual {
         require(!proposalExpired(_propId), "Proposal expired");
         require(governance.isProposalExecuter(msg.sender), "This function can be called only by specific role");
@@ -161,6 +194,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         emit ProposalExecuted(_propId);
     }
 
+    /**
+     * @notice Forcibly decline proposal
+     * @dev Can be called only by vetoCaster role
+     * @param _propId proposal ID
+     */
     function castVeto(uint256 _propId) external virtual {
         require(governance.isVetoCaster(msg.sender), "This function can be called only by specific role");
 
@@ -169,14 +207,31 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         proposals[_propId].status = Status.REJECTED;
     }
 
+    /**
+     * @notice Check expiration of proposal
+     * @dev Expired proposals cannot be executed or voted for
+     * @param _propId Proposal ID
+     * @return Expired or not
+     */
     function proposalExpired(uint256 _propId) public view virtual returns (bool) {
         return proposals[_propId].creationTime + proposalExpirationTime < block.timestamp;
     }
 
+    /**
+     * @notice Get proposal by its id
+     * @dev This is necessary because getter for "proposals" cannot be created automatically
+     * @param _propId Proposal ID
+     * @return Struct of the proposal
+     */
     function getProposal(uint256 _propId) public view virtual returns (Proposal memory) {
         return proposals[_propId];
     }
 
+    /**
+     * @notice Appropve another ProposalRegistry as a sub-DAO
+     * @dev Can be called only by subDaoApprover role
+     * @param _registry Address of the ProposalRegistry (sub-DAO)
+     */
     function approveChildRegistry(IProposalRegistry _registry) external virtual {
         require(governance.isSubDaoApprover(msg.sender), "This function can be called only by specific role");
         require(
@@ -189,6 +244,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         isChildRegistry[_registry] = true;
     }
 
+    /**
+     * @notice Remove sub-DAO
+     * @dev Can be called only by subDaoRemover role
+     * @param _registry Address of the sub-DAO to remove
+     */
     function removeChildRegistry(IProposalRegistry _registry) external virtual {
         require(governance.isSubDaoRemover(msg.sender), "This function can be called only by specific role");
         require(isChildRegistry[_registry], "The registry is not a child");
@@ -198,6 +258,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         isChildRegistry[_registry] = false;
     }
 
+    /**
+     * @notice Change proposal expiration time
+     * @dev Can be called only by proposalExpirationTimeChanger role
+     * @param _newTime New proposal exporation time
+     */
     function changeProposalExpirationTime(uint256 _newTime) external virtual {
         require(
             governance.isProposalExpirationTimeChanger(msg.sender), "This function can be called only by specific role"
@@ -208,6 +273,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         proposalExpirationTime = _newTime;
     }
 
+    /**
+     * @notice Change Governance of the DAO
+     * @dev Can be called only by governanceChanger role
+     * @param _newGovernance Address of the new Governance
+     */
     function changeGovernance(IGovernance _newGovernance) external virtual {
         require(governance.isGovernanceChanger(msg.sender), "This function can be called only by specific role");
 
@@ -216,6 +286,11 @@ contract ProposalRegistry is ERC165, IProposalRegistry {
         governance = _newGovernance;
     }
 
+    /**
+     * @notice Change ProposalRegistry which current ProposalRegistry is child of
+     * @dev Can be called only by parentRegistryChanger role
+     * @param _newRegistry Address of new parent ProposalRegistry (set address(0) if none)
+     */
     function changeParentRegistry(IProposalRegistry _newRegistry) external virtual {
         require(governance.isParentRegistryChanger(msg.sender), "This function can be called only by specific role");
 
