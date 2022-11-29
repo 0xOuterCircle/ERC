@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     // ==================== EVENTS ====================
 
-    event OCDaoControllerCreated(address indexed daoAddress, address indexed parentAddress);
+    event OCDaoControllerCreated(address indexed parentAddress);
     event OCProposalCreated(uint256 indexed propId);
     event OCProposalAccepted(uint256 indexed propId);
     event OCProposalRejected(uint256 indexed propId);
@@ -63,7 +63,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         // _roleByName["VETO_CASTER"] = keccak256("VETO_CASTER");
         // _grantRole(_roleByName["VETO_CASTER"], someAddress);
 
-        emit OCDaoControllerCreated(address(this), address(_parentDaoController));
+        emit OCDaoControllerCreated(address(_parentDaoController));
     }
 
     // ==================== PUBLIC FUNCTIONS ====================
