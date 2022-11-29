@@ -13,17 +13,17 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     // ==================== EVENTS ====================
 
-    event DaoControllerCreated(address indexed daoAddress, address indexed parentAddress);
-    event ProposalCreated(uint256 indexed propId);
-    event ProposalAccepted(uint256 indexed propId);
-    event ProposalRejected(uint256 indexed propId);
-    event ProposalExecuted(uint256 indexed propId);
-    event VetoCasted(uint256 indexed propId);
-    event ChildApproved(address indexed daoController);
-    event ChildRemoved(address indexed daoController);
-    event ParentChanged(address indexed oldParent, address indexed newParent);
-    event ProposalExpirationTimeChanged(uint256 oldTime, uint256 newTime);
-    event QuorumRequiredChanged(uint256 oldQuorum, uint256 newQuorum);
+    event OCDaoControllerCreated(address indexed daoAddress, address indexed parentAddress);
+    event OCProposalCreated(uint256 indexed propId);
+    event OCProposalAccepted(uint256 indexed propId);
+    event OCProposalRejected(uint256 indexed propId);
+    event OCProposalExecuted(uint256 indexed propId);
+    event OCVetoCasted(uint256 indexed propId);
+    event OCChildApproved(address indexed daoController);
+    event OCChildRemoved(address indexed daoController);
+    event OCParentChanged(address indexed oldParent, address indexed newParent);
+    event OCProposalExpirationTimeChanged(uint256 oldTime, uint256 newTime);
+    event OCQuorumRequiredChanged(uint256 oldQuorum, uint256 newQuorum);
 
     // ==================== STORAGE ====================
 
@@ -63,7 +63,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         // _roleByName["VETO_CASTER"] = keccak256("VETO_CASTER");
         // _grantRole(_roleByName["VETO_CASTER"], someAddress);
 
-        emit DaoControllerCreated(address(this), address(_parentDaoController));
+        emit OCDaoControllerCreated(address(this), address(_parentDaoController));
     }
 
     // ==================== PUBLIC FUNCTIONS ====================
@@ -127,7 +127,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
             prop.pipeline.push(action);
         }
 
-        emit ProposalCreated(propId_);
+        emit OCProposalCreated(propId_);
     }
 
     /**
@@ -187,10 +187,10 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         bool result = proposalAccepted(_propId);
         if (result) {
             proposal.status = ProposalStatus.ACCEPTED;
-            emit ProposalAccepted(_propId);
+            emit OCProposalAccepted(_propId);
         } else {
             proposal.status = ProposalStatus.REJECTED;
-            emit ProposalRejected(_propId);
+            emit OCProposalRejected(_propId);
         }
     }
 
@@ -228,7 +228,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
             require(success_, "Transaction failed");
         }
 
-        emit ProposalExecuted(_propId);
+        emit OCProposalExecuted(_propId);
     }
 
     /**
@@ -237,7 +237,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
      * @param _propId proposal ID
      */
     function castVeto(uint256 _propId) external virtual onlyRole(_roleByName["VETO_CASTER"]) {
-        emit VetoCasted(_propId);
+        emit OCVetoCasted(_propId);
 
         proposals[_propId].status = ProposalStatus.REJECTED;
     }
@@ -278,7 +278,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         );
         require(!isChildDaoController[_daoController], "The dao controller is already a child");
 
-        emit ChildApproved(address(_daoController));
+        emit OCChildApproved(address(_daoController));
 
         isChildDaoController[_daoController] = true;
     }
@@ -295,7 +295,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     {
         require(isChildDaoController[_daoController], "The dao controller is not a child");
 
-        emit ChildRemoved(address(_daoController));
+        emit OCChildRemoved(address(_daoController));
 
         isChildDaoController[_daoController] = false;
     }
@@ -310,7 +310,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         virtual
         onlyRole(_roleByName["PROPOSAL_EXPIRATION_TIME_CHANGER"])
     {
-        emit ProposalExpirationTimeChanged(proposalExpirationTime, _newTime);
+        emit OCProposalExpirationTimeChanged(proposalExpirationTime, _newTime);
 
         proposalExpirationTime = _newTime;
     }
@@ -325,7 +325,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         virtual
         onlyRole(_roleByName["QUORUM_REQUIRED_CHANGER"])
     {
-        emit QuorumRequiredChanged(quorumRequired, _newQuorumRequired);
+        emit OCQuorumRequiredChanged(quorumRequired, _newQuorumRequired);
 
         quorumRequired = _newQuorumRequired;
     }
