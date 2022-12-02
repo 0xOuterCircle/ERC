@@ -1,0 +1,28 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+#Hardhat files
+cache
+artifacts
+package-lock.json
+
+# Compiler files
+cache/
+out/
+bin
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Dotenv file
+.env
+
+# foundry stuff
+.gas-snapshot
+lib
