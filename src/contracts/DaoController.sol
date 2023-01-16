@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "interfaces/IOuterCircleApp.sol";
-import "interfaces/IDaoController.sol";
-import "contracts/OuterCircleApp.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/access/IAccessControl.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "../interfaces/IOuterCircleApp.sol";
+import "../interfaces/IDaoController.sol";
+import "./OuterCircleApp.sol";
+import "../../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "../../lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
 contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     // ==================== EVENTS ====================
@@ -27,7 +27,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
 
     // ==================== STORAGE ====================
 
-    mapping(address => mapping(uint256 => VoteType)) private voted; // to track users previous votes for proposals by proposal id
+    mapping(address => mapping(uint256 => VoteType)) private _voted; // to track users previous votes for proposals by proposal id
     mapping(IDaoController => bool) public isChildDaoController; // dict of sub-DAOs
     uint256 private proposalCounter; // to change proposal IDs
     mapping(uint256 => Proposal) private proposals; // dict of all proposals by id
@@ -35,7 +35,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     uint256 public quorumRequired; // minimal total number of votes to accept proposal
     IDaoController public immutable parentDaoController; // address of parrent dao controller (of which current dao controller is child of)
 
-    mapping(string => bytes32) private _roleByName; // get role ID by string role name
+    mapping(string => bytes32) internal _roleByName; // get role ID by string role name
     // all roles set to 0x00 (DEFAULT_ADMIM_ROLE) by default
 
     // ==================== CONSTRUCTOR ====================
@@ -44,19 +44,17 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         address _defaultAdminAddress,
         uint256 _proposalExpirationTime,
         uint256 _quorumRequired,
-        IDaoController _parentDaoController
-    )
-        OuterCircleApp(
-            "Default DAO Controller",
-            "Default DAO Controller made from DAO Controller template. Do not use it in prodiction."
-        )
+        IDaoController _parentDaoController,
+        string memory appName,
+        string memory appDescription
+    ) OuterCircleApp(appName, appDescription)
     {
         proposalExpirationTime = _proposalExpirationTime;
         parentDaoController = _parentDaoController;
         quorumRequired = _quorumRequired;
 
         // set roles here or add special logic to add them
-        // all unseted roles will be set to 0x00 (DEFAULT_ADMIN_ROLE)
+        // all unsetted roles will be set to 0x00 (DEFAULT_ADMIN_ROLE)
         _roleByName["DEFAULT_ADMIN_ROLE"] = 0x00;
         _grantRole(_roleByName["DEFAULT_ADMIN_ROLE"], _defaultAdminAddress);
 
@@ -91,7 +89,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
      * @param _who Address to check power of
      * @return Voting power
      */
-    function votingPowerOf(address _who) public pure returns (uint256) {
+    function votingPowerOf(address _who) public view virtual returns (uint256) {
         return 0; // zero for all by default
     }
 
@@ -152,19 +150,19 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
 
         require(votingPower_ > 0, "You have no voting power for this proposal");
 
-        if (voted[msg.sender][_propId] == VoteType.FOR) {
+        if (_voted[msg.sender][_propId] == VoteType.FOR) {
             proposal.forVp -= votingPower_;
         }
 
-        if (voted[msg.sender][_propId] == VoteType.AGAINST) {
+        if (_voted[msg.sender][_propId] == VoteType.AGAINST) {
             proposal.againstVp -= votingPower_;
         }
 
-        if (voted[msg.sender][_propId] == VoteType.ABSTAIN) {
+        if (_voted[msg.sender][_propId] == VoteType.ABSTAIN) {
             proposal.abstainVp -= votingPower_;
         }
 
-        voted[msg.sender][_propId] = _decision;
+        _voted[msg.sender][_propId] = _decision;
 
         if (_decision == VoteType.FOR) {
             proposal.forVp += votingPower_;
@@ -260,6 +258,16 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
      */
     function getProposal(uint256 _propId) public view virtual returns (Proposal memory) {
         return proposals[_propId];
+    }
+
+    /**
+     * @notice Get voting status for an address
+     * @param addr Address
+     * @param propId Proposal ID
+     * @return VoteType
+     */
+    function voted(address addr, uint256 propId) public view virtual returns (VoteType) {
+        return _voted[addr][propId];
     }
 
     /**

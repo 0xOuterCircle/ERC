@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "./DaoController.sol";
+import "./DefaultDaoController.sol";
 
 /**
  * @title This contract created just for simple DAO creation for OuterCictle MVP.
  * You can perceive it as mock contract for test purposes.
  */
-contract DaoFactory {
+contract DefaultDaoFactory {
     // ==================== PUBLIC FUNCTIONS ====================
 
     /**
@@ -19,18 +19,27 @@ contract DaoFactory {
      * @param _parentRegistry Parent DaoController (of which the DAO will be sub-DAO of) or address(0) if none
      * @return daoController Created DaoController
      */
-    function deployDao(uint256 _proposalExpirationTime, uint256 _quorumRequired, address _parentRegistry)
-        external
-        returns (DaoController daoController)
+    function deployDao(
+        uint256 _proposalExpirationTime,
+        uint256 _quorumRequired,
+        address _parentRegistry,
+        string memory _name,
+        uint256 _governanceInitialSupply,
+        string memory _governanceTicker
+    )
+    external
+    returns (DaoController daoController)
     {
         daoController =
-            new DaoController(
-                msg.sender,
-                _proposalExpirationTime,
-                _quorumRequired,
-                IDaoController(_parentRegistry),
-                "Default DAO Controller",
-                "Default DAO Controller made from DAO Controller template. Do not use it in production."
-            );
+        new DefaultDaoController(
+            msg.sender,
+            _proposalExpirationTime,
+            _quorumRequired,
+            IDaoController(_parentRegistry),
+            _name,
+            "Used only for tests.",
+            _governanceInitialSupply,
+            _governanceTicker
+        );
     }
 }

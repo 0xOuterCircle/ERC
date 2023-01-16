@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "interfaces/IOuterCircleApp.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "../interfaces/IOuterCircleApp.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
 contract OuterCircleApp is ERC165, IOuterCircleApp {
     bytes32 public appId;
