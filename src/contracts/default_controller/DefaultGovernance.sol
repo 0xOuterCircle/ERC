@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 import "../../../lib/solmate/src/tokens/ERC20.sol";
 
 interface IDefaultDaoController {
-    function grantRolesByGovernance(address who) external;
-    function revokeRolesByGovernance(address who) external;
+    function grantRolesByGovernance(address _who) external;
+    function revokeRolesByGovernance(address _who) external;
 }
 
 contract DefaultGovernance is ERC20 {
@@ -15,14 +15,16 @@ contract DefaultGovernance is ERC20 {
         string memory name,
         string memory ticker,
         uint256 initialSupply,
+        address to,
         address _dao
     ) ERC20(name, ticker, 0) {
-        _mint(msg.sender, initialSupply);
+        _mint(to, initialSupply);
         dao = IDefaultDaoController(_dao);
     }
 
     function transfer(address to, uint256 amount) public override returns (bool) {
         ERC20.transfer(to, amount);
+        manageDaoRoles(msg.sender);
         manageDaoRoles(to);
 
         return true;

@@ -4,21 +4,35 @@ pragma solidity ^0.8.0;
 
 import "./DefaultDaoController.sol";
 
-/**
- * @title This contract created just for simple DAO creation for OuterCictle MVP.
- * You can perceive it as mock contract for test purposes.
- */
-contract DefaultDaoFactory {
-    // ==================== PUBLIC FUNCTIONS ====================
+interface IGovernanceFactory {
+    function deployGovernance(
+        string memory _name,
+        string memory _governanceTicker,
+        uint256 _governanceInitialSupply,
+        address _to,
+        address _dao
+    ) external returns (address);
+}
 
-    /**
-     * @notice Deploy the most simple DAO ever
-     * @dev Base contracts will be deployed
-     * @param _proposalExpirationTime Time of proposals life in the DAO in sec
-     * @param _quorumRequired Quorum required to accept proposals in the DAO
-     * @param _parentRegistry Parent DaoController (of which the DAO will be sub-DAO of) or address(0) if none
-     * @return daoController Created DaoController
-     */
+contract DefaultDaoFactory {
+
+    address public owner;
+    IGovernanceFactory public governanceFactory;
+
+    // For tests
+    // address[] public daos;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function setGovernanceFactory(address _governanceFactory) external {
+        require(msg.sender == owner, "Only owner can call this function");
+
+        governanceFactory = IGovernanceFactory(_governanceFactory);
+        owner = 0x0000000000000000000000000000000000000000;
+    }
+
     function deployDao(
         uint256 _proposalExpirationTime,
         uint256 _quorumRequired,
@@ -26,20 +40,29 @@ contract DefaultDaoFactory {
         string memory _name,
         uint256 _governanceInitialSupply,
         string memory _governanceTicker
-    )
-    external
-    returns (DaoController daoController)
-    {
-        daoController =
-        new DefaultDaoController(
+    ) external returns (DefaultDaoController daoController) {
+
+        daoController = new DefaultDaoController(
             msg.sender,
             _proposalExpirationTime,
             _quorumRequired,
             IDaoController(_parentRegistry),
             _name,
             "Used only for tests.",
-            _governanceInitialSupply,
-            _governanceTicker
+            address(this)
         );
+
+        address governance = governanceFactory.deployGovernance(
+            _name,
+            _governanceTicker,
+            _governanceInitialSupply,
+            msg.sender,
+            address(daoController)
+        );
+
+        daoController.setGovernance(governance);
+
+        // For tests
+        // daos.push(address(daoController));
     }
 }

@@ -1,11 +1,15 @@
 pragma solidity ^0.8.0;
 
 import "../DaoController.sol";
-import "./DefaultGovernance.sol";
+
+interface IGovernance {
+    function balanceOf(address _who) external view returns (uint256);
+}
 
 contract DefaultDaoController is DaoController {
 
-    DefaultGovernance public governance;
+    IGovernance public governance;
+    address public factory;
 
     modifier onlyGovernance() {
         require(msg.sender == address(governance), "Only governance can call this function");
@@ -19,31 +23,28 @@ contract DefaultDaoController is DaoController {
         IDaoController _parentRegistry,
         string memory _name,
         string memory _description,
-        uint256 _governanceInitialSupply,
-        string memory _governanceTicker
+        address _factory
     ) DaoController(_owner, _proposalExpirationTime, _quorumRequired, _parentRegistry, string.concat(_name, " Default DAO Controller"), _description) {
-
-        governance = new DefaultGovernance(
-            string.concat(_name, " Governance"),
-            _governanceTicker,
-            _governanceInitialSupply,
-            address(this)
-        );
-
+        factory = _factory;
         _roleByName["PROPOSAL_CREATOR"] = keccak256("PROPOSAL_CREATOR");
         _roleByName["PROPOSAL_VOTER"] = keccak256("PROPOSAL_VOTER");
+    }
+
+    function setGovernance(address _governance) external {
+        require(msg.sender == factory, "Only factory can call this function");
+        governance = IGovernance(_governance);
     }
 
     function votingPowerOf(address _who) public view override returns (uint256) {
         return governance.balanceOf(_who);
     }
 
-    function grantRolesByGovernance(address _who) public onlyGovernance {
+    function grantRolesByGovernance(address _who) external {
         _grantRole(_roleByName["PROPOSAL_CREATOR"], _who);
         _grantRole(_roleByName["PROPOSAL_VOTER"], _who);
     }
 
-    function revokeRolesByGovernance(address _who) public onlyGovernance {
+    function revokeRolesByGovernance(address _who) external {
         _revokeRole(_roleByName["PROPOSAL_CREATOR"], _who);
         _revokeRole(_roleByName["PROPOSAL_VOTER"], _who);
     }
