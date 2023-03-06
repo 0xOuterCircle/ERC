@@ -19,7 +19,7 @@ contract DaoFactory {
      * @param _parentRegistry Parent DaoController (of which the DAO will be sub-DAO of) or address(0) if none
      * @return daoController Created DaoController
      */
-    function deployDao(uint256 _proposalExpirationTime, uint256 _quorumRequired, address _parentRegistry)
+    function deployDao(uint256 _proposalExpirationTime, uint256 _quorumRequired, address _parentRegistry, uint256 _totalVotingPower)
         external
         returns (DaoController daoController)
     {
@@ -28,6 +28,7 @@ contract DaoFactory {
                 msg.sender,
                 _proposalExpirationTime,
                 _quorumRequired,
+                _totalVotingPower,
                 IDaoController(_parentRegistry),
                 "Default DAO Controller",
                 "Default DAO Controller made from DAO Controller template. Do not use it in production."

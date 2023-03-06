@@ -20,7 +20,7 @@ contract DefaultDaoFactory {
     IGovernanceFactory public governanceFactory;
 
     // For tests
-    // address[] public daos;
+     address[] public daos;
 
     constructor() {
         owner = msg.sender;
@@ -46,6 +46,7 @@ contract DefaultDaoFactory {
             msg.sender,
             _proposalExpirationTime,
             _quorumRequired,
+            _governanceInitialSupply,
             IDaoController(_parentRegistry),
             _name,
             "Used only for tests.",
@@ -63,6 +64,6 @@ contract DefaultDaoFactory {
         daoController.setGovernance(governance);
 
         // For tests
-        // daos.push(address(daoController));
+         daos.push(address(daoController));
     }
 }

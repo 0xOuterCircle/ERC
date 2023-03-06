@@ -20,11 +20,19 @@ contract DefaultDaoController is DaoController {
         address _owner,
         uint256 _proposalExpirationTime,
         uint256 _quorumRequired,
+        uint256 _totalVotingPower,
         IDaoController _parentRegistry,
         string memory _name,
         string memory _description,
         address _factory
-    ) DaoController(_owner, _proposalExpirationTime, _quorumRequired, _parentRegistry, string.concat(_name, " Default DAO Controller"), _description) {
+    ) DaoController(_owner,
+                    _proposalExpirationTime,
+                    _quorumRequired,
+                    _totalVotingPower,
+                    _parentRegistry,
+                    string.concat(_name, " Default DAO Controller"),
+                    _description)
+    {
         factory = _factory;
         _roleByName["PROPOSAL_CREATOR"] = keccak256("PROPOSAL_CREATOR");
         _roleByName["PROPOSAL_VOTER"] = keccak256("PROPOSAL_VOTER");

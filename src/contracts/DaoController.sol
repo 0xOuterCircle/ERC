@@ -33,6 +33,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
     mapping(uint256 => Proposal) private proposals; // dict of all proposals by id
     uint256 public proposalExpirationTime; // time proposal to be able to vote for
     uint256 public quorumRequired; // minimal total number of votes to accept proposal
+    uint256 public totalVotingPower; // total voting power of all users
     IDaoController public immutable parentDaoController; // address of parrent dao controller (of which current dao controller is child of)
 
     mapping(string => bytes32) internal _roleByName; // get role ID by string role name
@@ -44,6 +45,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         address _defaultAdminAddress,
         uint256 _proposalExpirationTime,
         uint256 _quorumRequired,
+        uint256 _totalVotingPower,
         IDaoController _parentDaoController,
         string memory appName,
         string memory appDescription
@@ -52,6 +54,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         proposalExpirationTime = _proposalExpirationTime;
         parentDaoController = _parentDaoController;
         quorumRequired = _quorumRequired;
+        totalVotingPower = _totalVotingPower;
 
         // set roles here or add special logic to add them
         // all unsetted roles will be set to 0x00 (DEFAULT_ADMIN_ROLE)
@@ -149,18 +152,7 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         uint256 votingPower_ = votingPowerOf(msg.sender);
 
         require(votingPower_ > 0, "You have no voting power for this proposal");
-
-        if (_voted[msg.sender][_propId] == VoteType.FOR) {
-            proposal.forVp -= votingPower_;
-        }
-
-        if (_voted[msg.sender][_propId] == VoteType.AGAINST) {
-            proposal.againstVp -= votingPower_;
-        }
-
-        if (_voted[msg.sender][_propId] == VoteType.ABSTAIN) {
-            proposal.abstainVp -= votingPower_;
-        }
+        require(_voted[msg.sender][_propId] == VoteType.NONE, "You have already voted");
 
         _voted[msg.sender][_propId] = _decision;
 
@@ -182,11 +174,14 @@ contract DaoController is OuterCircleApp, AccessControl, IDaoController {
         //     }
         // }
 
-        bool result = proposalAccepted(_propId);
-        if (result) {
+        uint256 totalVotes_ = proposal.forVp + proposal.againstVp + proposal.abstainVp;
+
+        if (proposal.forVp > totalVotingPower - proposal.forVp - proposal.abstainVp &&  // Potential Against Votes
+            totalVotes_ >= quorumRequired) {
             proposal.status = ProposalStatus.ACCEPTED;
             emit OCProposalAccepted(_propId);
-        } else {
+        } else if (proposal.againstVp > totalVotingPower - proposal.againstVp - proposal.abstainVp && // Potential For Votes
+            totalVotes_ >= quorumRequired) {
             proposal.status = ProposalStatus.REJECTED;
             emit OCProposalRejected(_propId);
         }
